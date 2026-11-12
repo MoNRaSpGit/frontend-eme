@@ -219,7 +219,8 @@ function mutate(change: (current: EmeState) => EmeState) {
 async function poll() {
   try {
     await queue;
-    const reply = await api("/eme/state?since=" + serverVersion);
+    // Con version 0 el servidor aun esta vacio: se pide completo para poder subir los datos iniciales.
+    const reply = await api(serverVersion > 0 ? "/eme/state?since=" + serverVersion : "/eme/state");
     // Si mientras tanto hiciste un cambio, no pisamos tu pantalla con datos viejos.
     if (pending > 0) return;
     if (reply.unchanged) {
