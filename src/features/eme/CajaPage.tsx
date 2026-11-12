@@ -21,6 +21,10 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
   const { orders } = useEme();
   const [tab, setTab] = useState<Tab>("nuevo");
 
+  function confirmReset() {
+    if (window.confirm("¿Volver a los datos de ejemplo?")) resetDemo();
+  }
+
   const incoming = orders.filter((order) => order.status === "por_aceptar");
 
   return (
@@ -35,11 +39,7 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
         </div>
         <div className="row">
           <SyncBadge />
-          <button
-            type="button"
-            className="btn small"
-            onClick={() => window.confirm("¿Volver a los datos de ejemplo?") && resetDemo()}
-          >
+          <button type="button" className="btn small reset-top" onClick={confirmReset}>
             Reiniciar demo
           </button>
           <button type="button" className="btn small" onClick={onLogout}>
@@ -67,6 +67,11 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
           ))}
         </nav>
       </div>
+
+      {/* En celular el boton va abajo, como "Ingresar pedido"; en PC queda arriba. */}
+      <button type="button" className="btn wide reset-bottom" onClick={confirmReset}>
+        Reiniciar demo
+      </button>
 
       <IncomingOrders orders={incoming} />
     </div>

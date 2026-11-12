@@ -254,3 +254,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .mes-table .num { text-align: right; white-space: nowrap; }
 .mes-table .empty-row { color: var(--muted); }
 .mes-table + * { margin-top: 0; }
+
+.reset-bottom { display: none; margin-top: 24px; }
+@media (max-width: 640px) {
+  .reset-top { display: none; }
+  .reset-bottom { display: block; }
+}
