@@ -1,98 +1,156 @@
+import { useState } from "react";
 import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
 import { isSameMonth, money } from "../eme.format";
+import { loadProfitPercent } from "../eme.profit";
+import type { Order } from "../eme.types";
 
-const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+// Igual que el "Mes" de Joker: selector de mes, total y ganancia, semanas
+// desplegables con sus dias y, abajo, el grafico historico por mes.
+const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+// Total por dia. El mes actual sale de los pedidos reales; los meses
+// anteriores son datos de ejemplo (demo) y los futuros quedan en cero.
+function dayTotals(year: number, month: number, orders: Order[], now: Date): number[] {
+  const days = new Date(year, month + 1, 0).getDate();
+  const key = year * 12 + month;
+  const nowKey = now.getFullYear() * 12 + now.getMonth();
+  if (key > nowKey) return Array(days).fill(0);
+  if (key === nowKey) {
+    const totals = Array(days).fill(0) as number[];
+    for (const order of orders) {
+      if (order.status === "entregado" && isSameMonth(order.createdAt, now)) totals[new Date(order.createdAt).getDate() - 1] += order.total;
+    }
+    return totals;
+  }
+  let seedValue = (key * 7919) % 233280 || 1;
+  return Array.from({ length: days }, () => {
+    seedValue = (seedValue * 9301 + 49297) % 233280;
+    const r = seedValue / 233280;
+    return r < 0.1 ? 0 : Math.round((2200 + r * 6800) / 10) * 10;
+  });
+}
 
 export function MesScreen() {
-  const { orders, couriers } = useEme();
+  const { orders } = useEme();
   const now = new Date();
-  const month = orders.filter((order) => order.status === "entregado" && isSameMonth(order.createdAt, now));
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [openWeeks, setOpenWeeks] = useState<Set<number>>(new Set([1]));
+  const profitPercent = loadProfitPercent();
 
-  const sales = month.reduce((sum, order) => sum + order.total, 0);
-  const cost = month.reduce((sum, order) => sum + order.cost, 0);
-  const profit = sales - cost;
-  const average = month.length ? sales / month.length : 0;
+  const totals = dayTotals(year, month, orders, now);
+  const monthTotal = totals.reduce((sum, value) => sum + value, 0);
+  const profit = (value: number) => value * (profitPercent / 100);
 
-  const byDay = new Map<number, number>();
-  for (const order of month) {
-    const day = new Date(order.createdAt).getDate();
-    byDay.set(day, (byDay.get(day) ?? 0) + order.total);
+  // Semana 1 = dias 1-7, 2 = 8-14, 3 = 15-21, 4 = 22 en adelante (como en Joker).
+  const weeks = [1, 2, 3, 4].map((number) => {
+    const days = totals
+      .map((total, index) => ({ day: index + 1, total }))
+      .filter((item) => Math.min(4, Math.ceil(item.day / 7)) === number)
+      .map((item) => ({
+        ...item,
+        weekday: WEEKDAYS[new Date(year, month, item.day).getDay()],
+        date: String(item.day).padStart(2, "0") + "/" + String(month + 1).padStart(2, "0") + "/" + year
+      }));
+    return { number, days, total: days.reduce((sum, item) => sum + item.total, 0) };
+  });
+
+  const history = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+    const total = dayTotals(date.getFullYear(), date.getMonth(), orders, now).reduce((sum, value) => sum + value, 0);
+    return { key: date.getFullYear() + "-" + date.getMonth(), label: MONTH_SHORT[date.getMonth()], total, highlight: index === 5 };
+  });
+
+  function toggleWeek(number: number) {
+    setOpenWeeks((current) => {
+      const next = new Set(current);
+      if (next.has(number)) next.delete(number);
+      else next.add(number);
+      return next;
+    });
   }
-  const days = Array.from({ length: now.getDate() }, (_, index) => ({ day: index + 1, total: byDay.get(index + 1) ?? 0 }));
 
-  const channels = [
-    { label: "Mesas", total: month.filter((order) => order.channel === "mesa").reduce((s, o) => s + o.total, 0) },
-    { label: "WhatsApp", total: month.filter((order) => order.channel === "whatsapp").reduce((s, o) => s + o.total, 0) },
-    { label: "Mostrador", total: month.filter((order) => order.channel === "mostrador").reduce((s, o) => s + o.total, 0) }
-  ];
-
-  const topProducts = new Map<string, number>();
-  for (const order of month) for (const line of order.lines) topProducts.set(line.name, (topProducts.get(line.name) ?? 0) + line.qty);
-  const top = [...topProducts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-  const deliveries = couriers.map((courier) => ({
-    name: courier.name,
-    count: month.filter((order) => order.courierId === courier.id).length
-  }));
+  function shiftMonth(delta: number) {
+    const date = new Date(year, month + delta, 1);
+    setYear(date.getFullYear());
+    setMonth(date.getMonth());
+    setOpenWeeks(new Set([1]));
+  }
 
   return (
     <section>
-      <h2>Mes de {MONTHS[now.getMonth()]}</h2>
-      <div className="stat-row">
-        <div className="stat hero">
-          <span>Ganancia estimada</span>
-          <b>{money(profit)}</b>
-        </div>
-        <div className="stat">
-          <span>Ventas</span>
-          <b>{money(sales)}</b>
-        </div>
-        <div className="stat">
-          <span>Pedidos</span>
-          <b>{month.length}</b>
-        </div>
-        <div className="stat">
-          <span>Ticket promedio</span>
-          <b>{money(average)}</b>
+      <div className="mes-head">
+        <p className="hint">Mes</p>
+        <div className="mes-selector">
+          <button type="button" className="btn small" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
+            ‹
+          </button>
+          <h2>
+            {MONTH_NAMES[month]} {year}
+          </h2>
+          <button type="button" className="btn small" onClick={() => shiftMonth(1)} aria-label="Mes siguiente">
+            ›
+          </button>
         </div>
       </div>
+
+      <div className="panel-top">
+        <div className="stat hero">
+          <span>Total del mes</span>
+          <b>{money(monthTotal)}</b>
+        </div>
+        <div className="stat">
+          <span>Ganancia ({profitPercent}%)</span>
+          <b className="ok">{money(profit(monthTotal))}</b>
+        </div>
+      </div>
+
+      {weeks.map((week) => {
+        const open = openWeeks.has(week.number);
+        return (
+          <div key={week.number} className="mes-week">
+            <button type="button" className="mes-week-head" onClick={() => toggleWeek(week.number)} aria-expanded={open}>
+              <span className="mes-arrow">{open ? "▾" : "▸"}</span>
+              <h3>Semana {week.number}</h3>
+              <span className="mes-week-totals">
+                <b>{money(week.total)}</b>
+                <small className="ok">+{money(profit(week.total))}</small>
+              </span>
+            </button>
+            {open && (
+              <table className="mes-table">
+                <thead>
+                  <tr>
+                    <th>Día</th>
+                    <th>Fecha</th>
+                    <th className="num">Total</th>
+                    <th className="num">Ganancia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {week.days.map((item) => (
+                    <tr key={item.day} className={item.total === 0 ? "empty-row" : ""}>
+                      <td>{item.weekday}</td>
+                      <td>{item.date}</td>
+                      <td className="num">{money(item.total)}</td>
+                      <td className="num ok">{item.total > 0 ? money(profit(item.total)) : "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })}
 
       <div className="card">
-        <h3>Ventas por día</h3>
-        <SalesLineChart points={days.map((item) => ({ ...item, isToday: item.day === now.getDate() }))} />
+        <h3>Ventas por mes</h3>
+        <SalesLineChart points={history} ariaLabel="Ventas por mes" />
       </div>
-
-      <div className="grid">
-        <div className="card">
-          <h3>Por canal</h3>
-          {channels.map((item) => (
-            <div key={item.label} className="cart-row">
-              <span>{item.label}</span>
-              <b>{money(item.total)}</b>
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <h3>Lo más vendido</h3>
-          {top.map(([name, qty]) => (
-            <div key={name} className="cart-row">
-              <span>{name}</span>
-              <b>{qty}</b>
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <h3>Repartos por repartidor</h3>
-          {deliveries.map((item) => (
-            <div key={item.name} className="cart-row">
-              <span>🛵 {item.name}</span>
-              <b>{item.count}</b>
-            </div>
-          ))}
-        </div>
-      </div>
-      <p className="hint">Ganancia = ventas menos costo de los productos. Datos de ejemplo.</p>
+      <p className="hint">Mes actual con los pedidos reales; meses anteriores son datos de ejemplo.</p>
     </section>
   );
 }

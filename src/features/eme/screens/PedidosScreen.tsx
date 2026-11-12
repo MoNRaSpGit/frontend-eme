@@ -2,20 +2,9 @@ import { useState } from "react";
 import { TicketModal } from "../components/TicketModal";
 import { assignCourier, markDelivered, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
+import { PROFIT_KEY, loadProfitPercent } from "../eme.profit";
 import type { Order, Status } from "../eme.types";
 
-// Ganancia de la demo: 30% por defecto; con doble clic se cambia al porcentaje que quiera.
-const PROFIT_KEY = "eme-profit-rate";
-
-function loadProfitPercent(): number {
-  try {
-    const value = Number(localStorage.getItem(PROFIT_KEY));
-    if (value > 0 && value <= 100) return value;
-  } catch {
-    // usa el valor por defecto
-  }
-  return 30;
-}
 
 const CHANNEL_LABEL = { mesa: "Mesa", mostrador: "Mostrador", whatsapp: "WhatsApp" } as const;
 const STATUS_LABEL: Record<Status, string> = {

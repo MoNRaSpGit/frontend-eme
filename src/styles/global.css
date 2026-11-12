@@ -237,3 +237,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .lc-value { fill: var(--text); font-size: 11px; font-weight: 700; }
 .lc-label { fill: var(--muted); font-size: 11px; }
 .lc-label.today { fill: var(--accent-2); font-weight: 700; }
+
+.mes-head { display: grid; gap: 4px; margin-bottom: 10px; }
+.mes-selector { display: flex; align-items: center; gap: 12px; }
+.mes-selector h2 { margin: 0; flex: 1; text-align: center; }
+.mes-selector .btn { font-size: 20px; padding: 6px 16px; }
+.mes-week { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin-top: 10px; overflow: hidden; }
+.mes-week-head { width: 100%; display: flex; align-items: center; gap: 10px; background: transparent; border: 0; padding: 14px; text-align: left; }
+.mes-week-head h3 { flex: 1; color: var(--text); font-size: 16px; }
+.mes-arrow { color: var(--muted); width: 14px; }
+.mes-week-totals { display: grid; text-align: right; }
+.mes-week-totals small { font-size: 12px; }
+.mes-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mes-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 14px; border-top: 1px solid var(--line); }
+.mes-table td { padding: 9px 14px; border-top: 1px solid var(--line); }
+.mes-table .num { text-align: right; white-space: nowrap; }
+.mes-table .empty-row { color: var(--muted); }
+.mes-table + * { margin-top: 0; }
