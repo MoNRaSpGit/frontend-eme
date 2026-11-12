@@ -1,3 +1,4 @@
+import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
 import { isSameMonth, money } from "../eme.format";
 
@@ -19,7 +20,6 @@ export function MesScreen() {
     byDay.set(day, (byDay.get(day) ?? 0) + order.total);
   }
   const days = Array.from({ length: now.getDate() }, (_, index) => ({ day: index + 1, total: byDay.get(index + 1) ?? 0 }));
-  const maxDay = Math.max(1, ...days.map((item) => item.total));
 
   const channels = [
     { label: "Mesas", total: month.filter((order) => order.channel === "mesa").reduce((s, o) => s + o.total, 0) },
@@ -60,14 +60,7 @@ export function MesScreen() {
 
       <div className="card">
         <h3>Ventas por día</h3>
-        <div className="bars">
-          {days.map((item) => (
-            <div key={item.day} className="bar-col" title={money(item.total)}>
-              <div className="bar" style={{ height: Math.max(3, (item.total / maxDay) * 100) + "%" }} />
-              <span>{item.day}</span>
-            </div>
-          ))}
-        </div>
+        <SalesLineChart points={days.map((item) => ({ ...item, isToday: item.day === now.getDate() }))} />
       </div>
 
       <div className="grid">
