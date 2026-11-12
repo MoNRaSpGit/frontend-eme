@@ -4,7 +4,7 @@ import type { AccountClient, Channel, EmeState, Kind, Order, OrderLine, Payment 
 
 // Demo sin backend: el estado vive en localStorage y se sincroniza entre
 // pestañas del mismo navegador (asi se prueba Mesas en una y Caja en otra).
-const KEY = "eme-demo-state-v1";
+const KEY = "eme-demo-state-v2";
 
 function totalsOf(lines: OrderLine[]) {
   const total = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
@@ -64,7 +64,7 @@ function seed(): EmeState {
           createdAt: created,
           deliveredAt: created,
           table: channel === "mesa" ? 1 + Math.floor(random() * 8) : null,
-          courierId: kind === "delivery" ? 1 + Math.floor(random() * 3) : null
+          courierId: kind === "delivery" ? 1 + Math.floor(random() * 2) : null
         })
       );
     }
@@ -110,8 +110,7 @@ function seed(): EmeState {
     nextNumber: 4,
     couriers: [
       { id: 1, name: "Martín" },
-      { id: 2, name: "Lucía" },
-      { id: 3, name: "Diego" }
+      { id: 2, name: "Lucía" }
     ],
     clients: [
       { id: 1, name: "Almacén Don Pepe", phone: "098 555 111", balance: 4200, payments: [{ date: t(60 * 24 * 6), amount: 3000 }] },
