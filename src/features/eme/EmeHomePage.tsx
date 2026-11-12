@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { trackActivity } from "../../shared/state/activityLog";
 import { CajaPage } from "./CajaPage";
 import { MesasScreen } from "./screens/MesasScreen";
 import type { Role } from "./eme.types";
@@ -18,7 +19,14 @@ function loadRole(): Role | null {
 export function EmeHomePage() {
   const [role, setRole] = useState<Role | null>(loadRole);
 
+  // Una vez por apertura de la app (para saber si la usan).
+  useEffect(() => {
+    trackActivity("entrada", role ? "Abrió la app (" + role + ")" : "Abrió la app");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function choose(next: Role | null) {
+    trackActivity(next ? "login" : "logout", next ? "Eligió " + (next === "mesas" ? "Mesas" : "Mostrador") : "Salió");
     try {
       if (next) sessionStorage.setItem(ROLE_KEY, next);
       else sessionStorage.removeItem(ROLE_KEY);

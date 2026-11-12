@@ -5,6 +5,7 @@ import { MesScreen } from "./screens/MesScreen";
 import { NuevoPedidoScreen } from "./screens/NuevoPedidoScreen";
 import { PedidosScreen } from "./screens/PedidosScreen";
 import { SyncBadge } from "./components/SyncBadge";
+import { trackActivity } from "../../shared/state/activityLog";
 import { resetDemo, useEme } from "./eme.store";
 
 type Tab = "pedidos" | "nuevo" | "cuenta" | "mes";
@@ -20,6 +21,11 @@ const TABS: { id: Tab; icon: string; label: string }[] = [
 export function CajaPage({ onLogout }: { onLogout: () => void }) {
   const { orders } = useEme();
   const [tab, setTab] = useState<Tab>("nuevo");
+
+  function openTab(next: Tab) {
+    setTab(next);
+    trackActivity("seccion", "Abrió " + (TABS.find((item) => item.id === next)?.label ?? next));
+  }
 
   function confirmReset() {
     if (window.confirm("¿Volver a los datos de ejemplo?")) resetDemo();
@@ -59,7 +65,7 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
         </div>
         <nav className="sidebar">
           {TABS.map((item) => (
-            <button key={item.id} type="button" className={tab === item.id ? "on" : ""} onClick={() => setTab(item.id)}>
+            <button key={item.id} type="button" className={tab === item.id ? "on" : ""} onClick={() => openTab(item.id)}>
               <span className="side-icon">{item.icon}</span>
               <span className="side-label">{item.label}</span>
               {item.id === "pedidos" && incoming.length > 0 && <span className="dot">{incoming.length}</span>}

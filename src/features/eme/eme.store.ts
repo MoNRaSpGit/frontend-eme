@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { API_BASE_URL } from "../../shared/config/api";
+import { trackActivity } from "../../shared/state/activityLog";
 import { MENU } from "./eme.menu";
 import type { AccountClient, Channel, EmeState, Kind, Order, OrderLine, Payment } from "./eme.types";
 
@@ -324,6 +325,15 @@ export function createOrder(input: NewOrderInput): Order {
     created = order;
     return { ...current, orders: [...current.orders, order], nextNumber: number + 1, clients };
   });
+  const made = created as Order | null;
+  if (made) {
+    trackActivity(
+      "accion",
+      made.channel === "mesa"
+        ? "Pedido #" + made.number + " de la mesa " + made.table + " enviado a caja ($" + Math.round(made.total) + ")"
+        : "Pedido #" + made.number + " ingresado en caja" + (made.clientName ? " (" + made.clientName + ")" : "") + " ($" + Math.round(made.total) + ")"
+    );
+  }
   return created!;
 }
 
@@ -332,22 +342,27 @@ function patchOrder(id: string, patch: Partial<Order>) {
 }
 
 export function acceptOrder(id: string) {
+  trackActivity("accion", "Pedido aceptado en caja");
   patchOrder(id, { status: "aceptado" });
 }
 
 export function rejectOrder(id: string) {
+  trackActivity("accion", "Pedido rechazado en caja");
   patchOrder(id, { status: "rechazado" });
 }
 
 export function assignCourier(id: string, courierId: number) {
+  trackActivity("accion", "Repartidor asignado");
   patchOrder(id, { courierId, status: "en_camino" });
 }
 
 export function markDelivered(id: string) {
+  trackActivity("accion", "Pedido marcado como entregado");
   patchOrder(id, { status: "entregado", deliveredAt: new Date().toISOString() });
 }
 
 export function addClient(name: string, phone: string, address: string) {
+  trackActivity("accion", "Cliente agregado a cuenta corriente: " + name);
   mutate((current) => ({
     ...current,
     clients: [...current.clients, { id: Math.max(0, ...current.clients.map((item) => item.id)) + 1, name, phone, address, balance: 0, payments: [] }]
@@ -355,6 +370,7 @@ export function addClient(name: string, phone: string, address: string) {
 }
 
 export function registerPayment(clientId: number, amount: number) {
+  trackActivity("accion", "Pago registrado en cuenta corriente ($" + Math.round(amount) + ")");
   const date = new Date().toISOString();
   mutate((current) => ({
     ...current,
@@ -367,6 +383,7 @@ export function registerPayment(clientId: number, amount: number) {
 }
 
 export function resetDemo() {
+  trackActivity("accion", "Demo reiniciada");
   const fresh = seed();
   mutate(() => fresh);
 }
