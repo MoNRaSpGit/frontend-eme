@@ -132,6 +132,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .incoming { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.2); animation: pop 0.25s ease-out; }
 .incoming-tag { color: var(--accent-2); font-weight: 700; }
 .incoming-list { margin: 0; padding-left: 4px; list-style: none; display: grid; gap: 4px; font-size: 16px; }
+.incoming-stack { position: fixed; top: 12px; right: 12px; z-index: 40; display: grid; gap: 8px; width: min(240px, calc(100vw - 24px)); pointer-events: none; }
+.incoming-toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; text-align: left; background: var(--card-2); border: 1px solid var(--accent); border-radius: 14px; padding: 9px 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); animation: pop 0.25s ease-out; }
+.incoming-bell { font-size: 20px; animation: ring 1.4s ease-in-out infinite; }
+.incoming-text { display: grid; line-height: 1.25; }
+.incoming-text small { color: var(--muted); font-size: 12px; }
+@keyframes ring { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(14deg); } 80% { transform: rotate(-12deg); } 90% { transform: rotate(8deg); } }
 @keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .ticket { background: #fff; color: #111; border-radius: 10px; padding: 16px; font-family: "Courier New", monospace; font-size: 13px; display: grid; gap: 4px; }

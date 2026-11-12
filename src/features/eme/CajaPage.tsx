@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IncomingOrderModal } from "./components/IncomingOrderModal";
+import { IncomingOrders } from "./components/IncomingOrderModal";
 import { CuentaCorrienteScreen } from "./screens/CuentaCorrienteScreen";
 import { MesScreen } from "./screens/MesScreen";
 import { NuevoPedidoScreen } from "./screens/NuevoPedidoScreen";
@@ -60,7 +60,7 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
       {tab === "cuenta" && <CuentaCorrienteScreen />}
       {tab === "mes" && <MesScreen />}
 
-      {incoming[0] && <IncomingOrderModal order={incoming[0]} pending={incoming.length} />}
+      <IncomingOrders orders={incoming} />
     </div>
   );
 }
