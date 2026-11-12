@@ -24,3 +24,11 @@ export const MENU: Product[] = [
 export function findMenuItem(id: string) {
   return MENU.find((item) => item.id === id);
 }
+
+// Ingredientes extra que se pueden sumar a una pizza (modo muestra).
+export const PIZZA_EXTRAS = [
+  { id: "panceta", label: "Panceta", price: 80 },
+  { id: "cebolla", label: "Cebolla", price: 40 },
+  { id: "aceitunas", label: "Aceitunas", price: 40 },
+  { id: "muzza", label: "Extra muzzarella", price: 90 }
+] as const;

@@ -77,7 +77,7 @@ export function PedidosScreen() {
                   {order.address && <p className="address">📍 {order.address}</p>}
                   <ul className="order-lines">
                     {order.lines.map((line) => (
-                      <li key={line.productId}>
+                      <li key={line.name}>
                         {line.qty} × {line.name} <span className="hint">({money(line.price * line.qty)})</span>
                       </li>
                     ))}

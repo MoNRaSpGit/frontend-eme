@@ -5,7 +5,8 @@ export type Status = "por_aceptar" | "aceptado" | "en_camino" | "entregado" | "r
 export type Payment = "efectivo" | "tarjeta" | "cuenta";
 
 export type Product = { id: string; category: string; name: string; price: number; cost: number; emoji: string };
-export type OrderLine = { productId: string; name: string; price: number; qty: number };
+// "name" ya incluye los extras elegidos (ej: "Pizza muzzarella + panceta") y "price" los suma.
+export type OrderLine = { productId: string; name: string; price: number; qty: number; extras?: string[] };
 
 export type Order = {
   id: string;

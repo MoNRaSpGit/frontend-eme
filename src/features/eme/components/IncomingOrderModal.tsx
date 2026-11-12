@@ -40,7 +40,7 @@ export function IncomingOrders({ orders }: { orders: Order[] }) {
             <p className="hint">Enviado a las {timeOf(open.createdAt)}</p>
             <ul className="incoming-list">
               {open.lines.map((line) => (
-                <li key={line.productId}>
+                <li key={line.name}>
                   <b>{line.qty} ×</b> {line.name}
                 </li>
               ))}

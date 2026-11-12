@@ -27,7 +27,7 @@ export function TicketModal({ order, couriers, onClose }: Props) {
           {courier && <p>Repartidor: {courier.name}</p>}
           <hr />
           {order.lines.map((line) => (
-            <div key={line.productId} className="ticket-row">
+            <div key={line.name} className="ticket-row">
               <span>
                 {line.qty} x {line.name}
               </span>

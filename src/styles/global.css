@@ -198,3 +198,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   .move-arrow { grid-column: 3; grid-row: 1 / span 2; }
   .panel-top .stat b { font-size: 20px; }
 }
+
+.extras { display: grid; gap: 8px; margin: 4px 0; }
+.extra { display: flex; justify-content: space-between; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; text-align: left; }
+.extra.on { border-color: var(--accent); background: rgba(255, 107, 53, 0.12); }
+.extra b { color: var(--accent-2); }
