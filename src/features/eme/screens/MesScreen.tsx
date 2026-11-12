@@ -29,7 +29,9 @@ function dayTotals(year: number, month: number, orders: Order[], now: Date): num
   return Array.from({ length: days }, () => {
     seedValue = (seedValue * 9301 + 49297) % 233280;
     const r = seedValue / 233280;
-    return r < 0.1 ? 0 : Math.round((2200 + r * 6800) / 10) * 10;
+    // Meses de ejemplo que crecen: los mas viejos venden menos y se va subiendo hasta hoy.
+    const average = Math.max(700, 2000 - (nowKey - key - 1) * 250);
+    return r < 0.1 ? 0 : Math.round(((0.6 + r * 0.8) * average) / 10) * 10;
   });
 }
 
