@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { dateOf, money, timeOf } from "../eme.format";
 import type { Courier, Order } from "../eme.types";
 
@@ -7,6 +8,8 @@ const KIND_LABEL = { salon: "Salón", delivery: "Delivery", retiro: "Retiro" } a
 const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "Tarjeta", cuenta: "Cuenta corriente" } as const;
 
 export function TicketModal({ order, couriers, onClose }: Props) {
+  // Impresion ficticia (demo): solo confirma, no manda nada a imprimir.
+  const [printed, setPrinted] = useState(false);
   const courier = couriers.find((item) => item.id === order.courierId);
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -44,8 +47,8 @@ export function TicketModal({ order, couriers, onClose }: Props) {
           <p className="center">¡Gracias por su compra!</p>
         </div>
         <div className="modal-actions no-print">
-          <button type="button" className="btn primary" onClick={() => window.print()}>
-            Imprimir
+          <button type="button" className={printed ? "btn printed" : "btn primary"} disabled={printed} onClick={() => setPrinted(true)}>
+            {printed ? "✓ Impresión confirmada" : "Imprimir"}
           </button>
           <button type="button" className="btn" onClick={onClose}>
             Cerrar

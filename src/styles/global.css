@@ -203,3 +203,4 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .extra { display: flex; justify-content: space-between; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; text-align: left; }
 .extra.on { border-color: var(--accent); background: rgba(255, 107, 53, 0.12); }
 .extra b { color: var(--accent-2); }
+.btn.printed { background: rgba(74, 222, 128, 0.18); color: var(--ok); border-color: var(--ok); opacity: 1; }
