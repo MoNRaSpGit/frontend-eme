@@ -280,6 +280,25 @@ export function createOrder(input: NewOrderInput): Order {
   let created: Order | null = null;
   mutate((current) => {
     const number = current.nextNumber;
+    // Cuenta corriente: usa el cliente elegido o el que coincide por nombre; si no existe, lo crea.
+    let clients: AccountClient[] = current.clients;
+    let linkedClientId: number | null = null;
+    if ((input.payment ?? "efectivo") === "cuenta") {
+      const name = (input.clientName ?? "").trim();
+      let client =
+        input.clientId != null
+          ? clients.find((item) => item.id === input.clientId)
+          : clients.find((item) => item.name.trim().toLowerCase() === name.toLowerCase());
+      if (!client && name) {
+        client = { id: Math.max(0, ...clients.map((item) => item.id)) + 1, name, phone: input.phone ?? "", address: input.address ?? "", balance: 0, payments: [] };
+        clients = [...clients, client];
+      }
+      if (client) {
+        const linked = client;
+        linkedClientId = linked.id;
+        clients = clients.map((item) => (item.id === linked.id ? { ...item, balance: item.balance + total } : item));
+      }
+    }
     const order: Order = {
       id: "o" + number + "-" + createdAt,
       number,
@@ -294,7 +313,7 @@ export function createOrder(input: NewOrderInput): Order {
       phone: input.phone ?? "",
       address: input.address ?? "",
       payment: input.payment ?? "efectivo",
-      clientId: input.clientId ?? null,
+      clientId: linkedClientId,
       courierId: null,
       total,
       cost,
@@ -302,10 +321,6 @@ export function createOrder(input: NewOrderInput): Order {
       deliveredAt: null
     };
     created = order;
-    const clients: AccountClient[] =
-      order.payment === "cuenta" && order.clientId !== null
-        ? current.clients.map((client) => (client.id === order.clientId ? { ...client, balance: client.balance + total } : client))
-        : current.clients;
     return { ...current, orders: [...current.orders, order], nextNumber: number + 1, clients };
   });
   return created!;
@@ -329,6 +344,13 @@ export function assignCourier(id: string, courierId: number) {
 
 export function markDelivered(id: string) {
   patchOrder(id, { status: "entregado", deliveredAt: new Date().toISOString() });
+}
+
+export function addClient(name: string, phone: string, address: string) {
+  mutate((current) => ({
+    ...current,
+    clients: [...current.clients, { id: Math.max(0, ...current.clients.map((item) => item.id)) + 1, name, phone, address, balance: 0, payments: [] }]
+  }));
 }
 
 export function registerPayment(clientId: number, amount: number) {

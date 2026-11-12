@@ -204,3 +204,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .extra.on { border-color: var(--accent); background: rgba(255, 107, 53, 0.12); }
 .extra b { color: var(--accent-2); }
 .btn.printed { background: rgba(74, 222, 128, 0.18); color: var(--ok); border-color: var(--ok); opacity: 1; }
+
+.cc-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(0, 1.2fr); gap: 14px; align-items: start; }
+.cc-col { display: grid; gap: 10px; align-content: start; }
+.cc-list { display: grid; gap: 6px; }
+.cc-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.cc-item.on { border-color: var(--accent); background: rgba(255, 107, 53, 0.1); }
+.cc-item span { display: grid; gap: 2px; }
+.cc-item small { color: var(--muted); font-size: 12px; }
+.cc-detail { gap: 10px; }
+.cc-detail h4 { margin: 8px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-2); }
+.cc-move { border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.big { font-size: 18px; }
+@media (max-width: 900px) { .cc-layout { grid-template-columns: 1fr; } }

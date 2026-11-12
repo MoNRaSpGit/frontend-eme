@@ -11,7 +11,6 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [payment, setPayment] = useState<Payment>("efectivo");
-  const [clientId, setClientId] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [error, setError] = useState("");
@@ -19,20 +18,19 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
 
   function submit() {
     if (lines.length === 0) return setError("Agregá al menos un producto.");
-    if (payment === "cuenta" && clientId === null) return setError("Elegí el cliente de la cuenta corriente.");
+    if (payment === "cuenta" && !clientName.trim()) return setError("Para cuenta corriente poné el nombre del cliente.");
     setError("");
-    const chosen = clients.find((client) => client.id === clientId);
     const order = createOrder({
       channel: "mostrador",
       // Con direccion va por delivery; sin direccion, retira en el local.
       kind: address.trim() ? "delivery" : "retiro",
       lines,
       note,
-      clientName: clientName.trim() || chosen?.name || "",
+      clientName: clientName.trim(),
       phone,
       address: address.trim(),
       payment,
-      clientId: payment === "cuenta" ? clientId : null
+      clientId: null // se vincula por nombre; si no existe, se crea en cuenta corriente
     });
     setCreated(order);
     setLines([]);
@@ -41,7 +39,6 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
     setPhone("");
     setAddress("");
     setPayment("efectivo");
-    setClientId(null);
   }
 
   function closeTicket() {
@@ -55,7 +52,26 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
 
       <div className="form">
         <div className="client-row">
-          <input placeholder="Nuevo cliente" value={clientName} onChange={(event) => setClientName(event.target.value)} />
+          <input
+            placeholder="Nuevo cliente"
+            list="eme-clientes"
+            value={clientName}
+            onChange={(event) => {
+              const value = event.target.value;
+              setClientName(value);
+              // Si coincide con un cliente existente, completa telefono y direccion.
+              const match = clients.find((client) => client.name.toLowerCase() === value.trim().toLowerCase());
+              if (match) {
+                if (!phone) setPhone(match.phone);
+                if (!address && match.address) setAddress(match.address);
+              }
+            }}
+          />
+          <datalist id="eme-clientes">
+            {clients.map((client) => (
+              <option key={client.id} value={client.name} />
+            ))}
+          </datalist>
           <input placeholder="Teléfono" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
           <input placeholder="Dirección" value={address} onChange={(event) => setAddress(event.target.value)} />
         </div>
@@ -68,14 +84,10 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
           ))}
         </div>
         {payment === "cuenta" && (
-          <select value={clientId ?? ""} onChange={(event) => setClientId(event.target.value ? Number(event.target.value) : null)}>
-            <option value="">Elegí el cliente…</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
+          <p className="hint">
+            Se anota en la cuenta corriente de {clientName.trim() || "…"}
+            {clientName.trim() && !clients.some((client) => client.name.toLowerCase() === clientName.trim().toLowerCase()) ? " (cliente nuevo, se crea solo)" : ""}.
+          </p>
         )}
       </div>
 

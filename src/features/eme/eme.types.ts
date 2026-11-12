@@ -30,7 +30,7 @@ export type Order = {
 };
 
 export type Courier = { id: number; name: string };
-export type AccountClient = { id: number; name: string; phone: string; balance: number; payments: { date: string; amount: number }[] };
+export type AccountClient = { id: number; name: string; phone: string; address?: string; balance: number; payments: { date: string; amount: number }[] };
 
 export type EmeState = {
   orders: Order[];
