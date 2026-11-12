@@ -1,10 +1,53 @@
-// Punto de partida de Eme (pedidos para restaurantes, similar a Joker).
-// Las pantallas se van sumando en ./screens segun las instrucciones.
+import { useState } from "react";
+import { CajaPage } from "./CajaPage";
+import { MesasScreen } from "./screens/MesasScreen";
+import type { Role } from "./eme.types";
+
+const ROLE_KEY = "eme-demo-role";
+
+function loadRole(): Role | null {
+  try {
+    const value = sessionStorage.getItem(ROLE_KEY);
+    return value === "mesas" || value === "caja" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+// Demo sin contraseña: el login son dos botones.
 export function EmeHomePage() {
+  const [role, setRole] = useState<Role | null>(loadRole);
+
+  function choose(next: Role | null) {
+    try {
+      if (next) sessionStorage.setItem(ROLE_KEY, next);
+      else sessionStorage.removeItem(ROLE_KEY);
+    } catch {
+      // ignorar
+    }
+    setRole(next);
+  }
+
+  if (role === "mesas") return <MesasScreen onLogout={() => choose(null)} />;
+  if (role === "caja") return <CajaPage onLogout={() => choose(null)} />;
+
   return (
-    <main className="eme-home">
-      <h1>Eme</h1>
-      <p>Pedidos y tickets para restaurantes. En construcción.</p>
+    <main className="login">
+      <div className="login-card">
+        <span className="login-logo">🍴</span>
+        <h1>Eme</h1>
+        <p>¿Cómo vas a entrar?</p>
+        <button type="button" className="login-btn mesas" onClick={() => choose("mesas")}>
+          <span>🍽</span>
+          <b>Mesas</b>
+          <small>Tomar el pedido de la mesa</small>
+        </button>
+        <button type="button" className="login-btn caja" onClick={() => choose("caja")}>
+          <span>🧾</span>
+          <b>Mostrador</b>
+          <small>Caja, pedidos, cuenta corriente y mes</small>
+        </button>
+      </div>
     </main>
   );
 }
