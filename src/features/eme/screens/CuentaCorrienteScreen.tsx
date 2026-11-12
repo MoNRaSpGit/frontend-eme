@@ -12,11 +12,20 @@ export function CuentaCorrienteScreen() {
   const [newPhone, setNewPhone] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [amount, setAmount] = useState("");
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null);
 
   const totalDebt = clients.reduce((sum, client) => sum + client.balance, 0);
   const filtered = clients.filter((client) => client.name.toLowerCase().includes(search.trim().toLowerCase()));
   const selected = clients.find((client) => client.id === selectedId) ?? null;
-  const movements = selected ? orders.filter((order) => order.clientId === selected.id && order.status !== "rechazado") : [];
+  // Una sola lista: pedidos (suman) y pagos (restan), lo mas nuevo arriba.
+  const movements = selected
+    ? [
+        ...orders
+          .filter((order) => order.clientId === selected.id && order.status !== "rechazado")
+          .map((order) => ({ kind: "pedido" as const, date: order.createdAt, order })),
+        ...selected.payments.map((payment) => ({ kind: "pago" as const, date: payment.date, amount: payment.amount }))
+      ].sort((a, b) => b.date.localeCompare(a.date))
+    : [];
 
   function submitClient() {
     const name = newName.trim();
@@ -78,52 +87,44 @@ export function CuentaCorrienteScreen() {
             <div className="card empty">Tocá un cliente para ver su detalle.</div>
           ) : (
             <div className="card cc-detail">
-              <div className="row between">
-                <div>
-                  <h3>{selected.name}</h3>
-                  <p className="hint">
-                    {selected.phone || "Sin teléfono"}
-                    {selected.address ? " · " + selected.address : ""}
-                  </p>
-                </div>
-                <b className={selected.balance > 0 ? "debt big" : "ok big"}>{selected.balance > 0 ? "Debe " + money(selected.balance) : "Al día"}</b>
+              <div className="cc-head">
+                <h3>{selected.name}</h3>
+                <b className={selected.balance > 0 ? "debt cc-balance" : "ok cc-balance"}>{selected.balance > 0 ? money(selected.balance) : "Al día"}</b>
+                {selected.balance > 0 && <span className="hint">es lo que debe</span>}
               </div>
 
-              <h4>Pedidos a cuenta</h4>
-              {movements.length === 0 && <p className="hint">Todavía no tiene pedidos a cuenta.</p>}
-              {movements.map((order) => (
-                <div key={order.id} className="cc-move">
-                  <div className="cart-row">
-                    <span>
-                      Pedido #{order.number} · {dateOf(order.createdAt)} {timeOf(order.createdAt)}
-                    </span>
-                    <b className="debt">+ {money(order.total)}</b>
-                  </div>
-                  <ul className="order-lines">
-                    {order.lines.map((line) => (
-                      <li key={line.name}>
-                        {line.qty} × {line.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-
-              <h4>Pagos</h4>
-              {selected.payments.length === 0 && <p className="hint">Sin pagos registrados.</p>}
-              {selected.payments.map((payment) => (
-                <div key={payment.date} className="cart-row">
-                  <span>
-                    Pago · {dateOf(payment.date)} {timeOf(payment.date)}
-                  </span>
-                  <b className="ok">− {money(payment.amount)}</b>
-                </div>
-              ))}
+              <div className="cc-moves">
+                {movements.length === 0 && <p className="hint">Sin movimientos todavía.</p>}
+                {movements.map((move) =>
+                  move.kind === "pedido" ? (
+                    <div key={move.order.id} className="cc-row">
+                      <button type="button" onClick={() => setOpenOrderId(openOrderId === move.order.id ? null : move.order.id)}>
+                        <span>
+                          Pedido #{move.order.number} <small>{dateOf(move.date)}</small>
+                        </span>
+                        <b className="debt">{money(move.order.total)}</b>
+                      </button>
+                      {openOrderId === move.order.id && (
+                        <p className="hint">{move.order.lines.map((line) => line.qty + " × " + line.name).join(" · ")}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div key={move.date} className="cc-row">
+                      <button type="button" disabled>
+                        <span>
+                          Pago <small>{dateOf(move.date)}</small>
+                        </span>
+                        <b className="ok">− {money(move.amount)}</b>
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
 
               <div className="row">
                 <input placeholder="Monto que pagó" inputMode="numeric" value={amount} onChange={(event) => setAmount(event.target.value)} />
                 <button type="button" className="btn primary" onClick={pay}>
-                  Registrar pago
+                  Pagó
                 </button>
               </div>
             </div>
