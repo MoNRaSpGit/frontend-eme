@@ -54,24 +54,26 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         <div className="client-row">
           <input
             placeholder="Nuevo cliente"
-            list="eme-clientes"
+            list={payment === "cuenta" ? "eme-clientes" : undefined}
             value={clientName}
             onChange={(event) => {
               const value = event.target.value;
               setClientName(value);
-              // Si coincide con un cliente existente, completa telefono y direccion.
-              const match = clients.find((client) => client.name.toLowerCase() === value.trim().toLowerCase());
+              // Solo en cuenta corriente: si coincide con un cliente existente, completa telefono y direccion.
+              const match = payment !== "cuenta" ? undefined : clients.find((client) => client.name.toLowerCase() === value.trim().toLowerCase());
               if (match) {
                 if (!phone) setPhone(match.phone);
                 if (!address && match.address) setAddress(match.address);
               }
             }}
           />
-          <datalist id="eme-clientes">
-            {clients.map((client) => (
-              <option key={client.id} value={client.name} />
-            ))}
-          </datalist>
+          {payment === "cuenta" && (
+            <datalist id="eme-clientes">
+              {clients.map((client) => (
+                <option key={client.id} value={client.name} />
+              ))}
+            </datalist>
+          )}
           <input placeholder="Teléfono" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
           <input placeholder="Dirección" value={address} onChange={(event) => setAddress(event.target.value)} />
         </div>
