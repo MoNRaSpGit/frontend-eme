@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
+import { SyncBadge } from "../components/SyncBadge";
 import { createOrder, useEme } from "../eme.store";
 import type { OrderLine } from "../eme.types";
 
@@ -40,9 +41,12 @@ export function MesasScreen({ onLogout }: { onLogout: () => void }) {
             <p>Tomar pedido</p>
           </div>
         </div>
+        <div className="row">
+          <SyncBadge />
         <button type="button" className="btn small" onClick={onLogout}>
           Salir
         </button>
+        </div>
       </header>
 
       {sent && <div className="toast">{sent}</div>}

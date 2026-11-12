@@ -4,21 +4,22 @@ import { CuentaCorrienteScreen } from "./screens/CuentaCorrienteScreen";
 import { MesScreen } from "./screens/MesScreen";
 import { NuevoPedidoScreen } from "./screens/NuevoPedidoScreen";
 import { PedidosScreen } from "./screens/PedidosScreen";
+import { SyncBadge } from "./components/SyncBadge";
 import { resetDemo, useEme } from "./eme.store";
 
 type Tab = "pedidos" | "nuevo" | "cuenta" | "mes";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "pedidos", label: "📋 Pedidos" },
-  { id: "nuevo", label: "➕ Nuevo pedido" },
-  { id: "cuenta", label: "📒 Cuenta corriente" },
-  { id: "mes", label: "📈 Mes" }
+const TABS: { id: Tab; icon: string; label: string }[] = [
+  { id: "nuevo", icon: "➕", label: "Nuevo pedido" },
+  { id: "pedidos", icon: "📋", label: "Pedidos" },
+  { id: "cuenta", icon: "📒", label: "Cuenta corriente" },
+  { id: "mes", icon: "📈", label: "Mes" }
 ];
 
 // Rol "Caja / Mostrador": ve todo, como administrador.
 export function CajaPage({ onLogout }: { onLogout: () => void }) {
   const { orders } = useEme();
-  const [tab, setTab] = useState<Tab>("pedidos");
+  const [tab, setTab] = useState<Tab>("nuevo");
 
   const incoming = orders.filter((order) => order.status === "por_aceptar");
 
@@ -33,6 +34,7 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
         <div className="row">
+          <SyncBadge />
           <button
             type="button"
             className="btn small"
@@ -46,19 +48,25 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
 
-      <nav className="tabs">
-        {TABS.map((item) => (
-          <button key={item.id} type="button" className={tab === item.id ? "on" : ""} onClick={() => setTab(item.id)}>
-            {item.label}
-            {item.id === "pedidos" && incoming.length > 0 && <span className="dot">{incoming.length}</span>}
-          </button>
-        ))}
-      </nav>
 
-      {tab === "pedidos" && <PedidosScreen />}
-      {tab === "nuevo" && <NuevoPedidoScreen onCreated={() => setTab("pedidos")} />}
-      {tab === "cuenta" && <CuentaCorrienteScreen />}
-      {tab === "mes" && <MesScreen />}
+
+      <div className="caja-body">
+        <div className="caja-main">
+          {tab === "pedidos" && <PedidosScreen />}
+          {tab === "nuevo" && <NuevoPedidoScreen onCreated={() => setTab("pedidos")} />}
+          {tab === "cuenta" && <CuentaCorrienteScreen />}
+          {tab === "mes" && <MesScreen />}
+        </div>
+        <nav className="sidebar">
+          {TABS.map((item) => (
+            <button key={item.id} type="button" className={tab === item.id ? "on" : ""} onClick={() => setTab(item.id)}>
+              <span className="side-icon">{item.icon}</span>
+              <span className="side-label">{item.label}</span>
+              {item.id === "pedidos" && incoming.length > 0 && <span className="dot">{incoming.length}</span>}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       <IncomingOrders orders={incoming} />
     </div>

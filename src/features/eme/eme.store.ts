@@ -1,10 +1,11 @@
 import { useSyncExternalStore } from "react";
+import { API_BASE_URL } from "../../shared/config/api";
 import { MENU } from "./eme.menu";
 import type { AccountClient, Channel, EmeState, Kind, Order, OrderLine, Payment } from "./eme.types";
 
 // Demo sin backend: el estado vive en localStorage y se sincroniza entre
 // pestañas del mismo navegador (asi se prueba Mesas en una y Caja en otra).
-const KEY = "eme-demo-state-v2";
+const KEY = "eme-demo-state-v3";
 
 function totalsOf(lines: OrderLine[]) {
   const total = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
@@ -120,7 +121,7 @@ function seed(): EmeState {
   };
 }
 
-function load(): EmeState {
+function loadLocal(): EmeState {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return JSON.parse(raw) as EmeState;
@@ -130,29 +131,120 @@ function load(): EmeState {
   return seed();
 }
 
-let state: EmeState = load();
+// ---- Sesion unica compartida ----------------------------------------
+// El estado completo vive en el backend (GET/PUT /eme/state con numero de
+// version). Cada cambio es una funcion pura sobre el estado: si otro
+// dispositivo escribio antes, se baja lo ultimo y se reaplica el cambio.
+// localStorage queda como copia local por si no hay conexion.
+export type SyncStatus = "conectando" | "en-linea" | "sin-conexion";
+
+let state: EmeState = loadLocal();
+let serverVersion = 0;
+let syncStatus: SyncStatus = "conectando";
+let queue: Promise<void> = Promise.resolve();
+let pending = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
   listeners.forEach((listener) => listener());
 }
 
-function commit(next: EmeState) {
-  state = next;
+function setStatus(next: SyncStatus) {
+  if (syncStatus !== next) {
+    syncStatus = next;
+    emit();
+  }
+}
+
+function saveLocal() {
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
-    // sin storage: funciona igual en esta pestaña
+    // sin storage: funciona igual
   }
+}
+
+type ServerReply = { ok: boolean; version: number; unchanged?: boolean; state: EmeState | null };
+
+async function api(path: string, init?: RequestInit): Promise<ServerReply> {
+  const response = await fetch(API_BASE_URL + path, { ...init, headers: { "Content-Type": "application/json" } });
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  return (await response.json()) as ServerReply;
+}
+
+function adopt(reply: ServerReply) {
+  if (reply.state) {
+    state = reply.state;
+    saveLocal();
+  }
+  serverVersion = reply.version;
   emit();
 }
 
-if (typeof window !== "undefined") {
-  window.addEventListener("storage", (event) => {
-    if (event.key === KEY) {
-      state = load();
-      emit();
+async function pushState(next: EmeState): Promise<ServerReply> {
+  return api("/eme/state", { method: "PUT", body: JSON.stringify({ baseVersion: serverVersion, state: next }) });
+}
+
+// Aplica el cambio localmente al instante (UI rapida) y lo manda al servidor.
+function mutate(change: (current: EmeState) => EmeState) {
+  state = change(state);
+  saveLocal();
+  emit();
+  pending++;
+  queue = queue.then(async () => {
+    try {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const reply = await pushState(state);
+        if (reply.ok) {
+          serverVersion = reply.version;
+          setStatus("en-linea");
+          return;
+        }
+        // Conflicto: otro dispositivo se adelanto. Bajamos lo suyo y reaplicamos.
+        if (reply.state) {
+          state = change(reply.state);
+          serverVersion = reply.version;
+          saveLocal();
+          emit();
+        }
+      }
+    } catch {
+      setStatus("sin-conexion");
+    } finally {
+      pending--;
     }
+  });
+}
+
+async function poll() {
+  try {
+    await queue;
+    const reply = await api("/eme/state?since=" + serverVersion);
+    // Si mientras tanto hiciste un cambio, no pisamos tu pantalla con datos viejos.
+    if (pending > 0) return;
+    if (reply.unchanged) {
+      setStatus("en-linea");
+      return;
+    }
+    if (reply.state) {
+      adopt(reply);
+    } else {
+      // Servidor vacio (primera vez): subimos los datos de ejemplo.
+      const pushed = await pushState(state);
+      if (pushed.ok) serverVersion = pushed.version;
+      else if (pushed.state) adopt(pushed);
+    }
+    setStatus("en-linea");
+  } catch {
+    setStatus("sin-conexion");
+  }
+}
+
+if (typeof window !== "undefined") {
+  void poll();
+  window.setInterval(() => void poll(), 2000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void poll();
   });
 }
 
@@ -163,6 +255,10 @@ function subscribe(listener: () => void) {
 
 export function useEme(): EmeState {
   return useSyncExternalStore(subscribe, () => state);
+}
+
+export function useSyncStatus(): SyncStatus {
+  return useSyncExternalStore(subscribe, () => syncStatus);
 }
 
 export type NewOrderInput = {
@@ -180,39 +276,43 @@ export type NewOrderInput = {
 
 export function createOrder(input: NewOrderInput): Order {
   const { total, cost } = totalsOf(input.lines);
-  const number = state.nextNumber;
   const createdAt = new Date().toISOString();
-  const order: Order = {
-    id: "o" + number + "-" + createdAt,
-    number,
-    channel: input.channel,
-    kind: input.kind,
-    // Lo que levanta la mesa debe aceptarlo la caja; lo que ingresa la caja ya entra aceptado.
-    status: input.channel === "mesa" ? "por_aceptar" : "aceptado",
-    table: input.table ?? null,
-    lines: input.lines,
-    note: input.note ?? "",
-    clientName: input.clientName ?? "",
-    phone: input.phone ?? "",
-    address: input.address ?? "",
-    payment: input.payment ?? "efectivo",
-    clientId: input.clientId ?? null,
-    courierId: null,
-    total,
-    cost,
-    createdAt,
-    deliveredAt: null
-  };
-  const clients: AccountClient[] =
-    order.payment === "cuenta" && order.clientId !== null
-      ? state.clients.map((client) => (client.id === order.clientId ? { ...client, balance: client.balance + total } : client))
-      : state.clients;
-  commit({ ...state, orders: [...state.orders, order], nextNumber: number + 1, clients });
-  return order;
+  let created: Order | null = null;
+  mutate((current) => {
+    const number = current.nextNumber;
+    const order: Order = {
+      id: "o" + number + "-" + createdAt,
+      number,
+      channel: input.channel,
+      kind: input.kind,
+      // Lo que levanta la mesa debe aceptarlo la caja; lo que ingresa la caja ya entra aceptado.
+      status: input.channel === "mesa" ? "por_aceptar" : "aceptado",
+      table: input.table ?? null,
+      lines: input.lines,
+      note: input.note ?? "",
+      clientName: input.clientName ?? "",
+      phone: input.phone ?? "",
+      address: input.address ?? "",
+      payment: input.payment ?? "efectivo",
+      clientId: input.clientId ?? null,
+      courierId: null,
+      total,
+      cost,
+      createdAt,
+      deliveredAt: null
+    };
+    created = order;
+    const clients: AccountClient[] =
+      order.payment === "cuenta" && order.clientId !== null
+        ? current.clients.map((client) => (client.id === order.clientId ? { ...client, balance: client.balance + total } : client))
+        : current.clients;
+    return { ...current, orders: [...current.orders, order], nextNumber: number + 1, clients };
+  });
+  return created!;
 }
 
 function patchOrder(id: string, patch: Partial<Order>) {
-  commit({ ...state, orders: state.orders.map((order) => (order.id === id ? { ...order, ...patch } : order)) });
+  mutate((current) => ({ ...current, orders: current.orders.map((order) => (order.id === id ? { ...order, ...patch } : order)) }));
 }
 
 export function acceptOrder(id: string) {
@@ -232,16 +332,18 @@ export function markDelivered(id: string) {
 }
 
 export function registerPayment(clientId: number, amount: number) {
-  commit({
-    ...state,
-    clients: state.clients.map((client) =>
+  const date = new Date().toISOString();
+  mutate((current) => ({
+    ...current,
+    clients: current.clients.map((client) =>
       client.id === clientId
-        ? { ...client, balance: Math.max(0, client.balance - amount), payments: [{ date: new Date().toISOString(), amount }, ...client.payments] }
+        ? { ...client, balance: Math.max(0, client.balance - amount), payments: [{ date, amount }, ...client.payments] }
         : client
     )
-  });
+  }));
 }
 
 export function resetDemo() {
-  commit(seed());
+  const fresh = seed();
+  mutate(() => fresh);
 }
