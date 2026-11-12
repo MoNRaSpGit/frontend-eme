@@ -227,3 +227,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .cc-row button:disabled { cursor: default; }
 .cc-row small { color: var(--muted); margin-left: 6px; }
 .cc-row .hint { padding: 0 2px 10px; }
+
+.stat.editable { cursor: pointer; touch-action: manipulation; user-select: none; }
+.percent-input { width: 56px; padding: 2px 6px; border-radius: 8px; text-align: center; display: inline-block; }

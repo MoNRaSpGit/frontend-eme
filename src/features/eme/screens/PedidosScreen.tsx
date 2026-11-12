@@ -4,8 +4,18 @@ import { assignCourier, markDelivered, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
 import type { Order, Status } from "../eme.types";
 
-// Ganancia fija de la demo: 30% de lo que entra.
-const PROFIT_RATE = 0.3;
+// Ganancia de la demo: 30% por defecto; con doble clic se cambia al porcentaje que quiera.
+const PROFIT_KEY = "eme-profit-rate";
+
+function loadProfitPercent(): number {
+  try {
+    const value = Number(localStorage.getItem(PROFIT_KEY));
+    if (value > 0 && value <= 100) return value;
+  } catch {
+    // usa el valor por defecto
+  }
+  return 30;
+}
 
 const CHANNEL_LABEL = { mesa: "Mesa", mostrador: "Mostrador", whatsapp: "WhatsApp" } as const;
 const STATUS_LABEL: Record<Status, string> = {
@@ -23,10 +33,34 @@ export function PedidosScreen() {
   const { orders, couriers } = useEme();
   const [openId, setOpenId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Order | null>(null);
+  const [profitPercent, setProfitPercent] = useState<number>(loadProfitPercent);
+  const [editingProfit, setEditingProfit] = useState(false);
+  const [profitDraft, setProfitDraft] = useState("");
 
-  const today = orders.filter((order) => isSameDay(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar");
+  // Lo mas nuevo arriba; los pedidos viejos van quedando abajo.
+  const today = orders
+    .filter((order) => isSameDay(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.number - a.number);
   const income = today.reduce((sum, order) => sum + order.total, 0);
-  const profit = income * PROFIT_RATE;
+  const profit = income * (profitPercent / 100);
+
+  function startEditProfit() {
+    setProfitDraft(String(profitPercent));
+    setEditingProfit(true);
+  }
+
+  function saveProfit() {
+    const value = Number(profitDraft.replace(",", "."));
+    if (value > 0 && value <= 100) {
+      setProfitPercent(value);
+      try {
+        localStorage.setItem(PROFIT_KEY, String(value));
+      } catch {
+        // sin storage: queda en esta pantalla
+      }
+    }
+    setEditingProfit(false);
+  }
 
   return (
     <section>
@@ -38,10 +72,29 @@ export function PedidosScreen() {
           <b>{money(income)}</b>
           <small>{today.length} pedidos</small>
         </div>
-        <div className="stat">
-          <span>Ganancia ({Math.round(PROFIT_RATE * 100)}%)</span>
+        <div className="stat editable" onDoubleClick={startEditProfit} title="Doble clic para cambiar el porcentaje">
+          <span>
+            Ganancia (
+            {editingProfit ? (
+              <input
+                className="percent-input"
+                autoFocus
+                inputMode="decimal"
+                value={profitDraft}
+                onChange={(event) => setProfitDraft(event.target.value)}
+                onBlur={saveProfit}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveProfit();
+                  if (event.key === "Escape") setEditingProfit(false);
+                }}
+              />
+            ) : (
+              profitPercent
+            )}
+            %)
+          </span>
           <b className="ok">{money(profit)}</b>
-          <small>sobre lo que entró</small>
+          <small>doble clic para cambiar el %</small>
         </div>
       </div>
 
