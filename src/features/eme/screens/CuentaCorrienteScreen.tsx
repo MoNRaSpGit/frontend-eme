@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { addClient, registerPayment, useEme } from "../eme.store";
-import { dateOf, money, timeOf } from "../eme.format";
+import { dateOf, money } from "../eme.format";
 
 // Como en Joker: izquierda para agregar clientes, al medio la lista y a la
 // derecha el detalle del cliente elegido.
