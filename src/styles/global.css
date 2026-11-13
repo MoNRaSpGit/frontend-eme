@@ -260,3 +260,31 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   .reset-top { display: none; }
   .reset-bottom { display: block; }
 }
+
+/* Aviso de actualizacion (13/11/2026, misma dinamica que los otros proyectos):
+   cartel abajo a la izquierda y, al tocar Actualizar, una pantalla con barra de progreso. */
+.update-banner {
+  position: fixed;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(390px, calc(100vw - 32px));
+  padding: 10px 10px 10px 16px;
+  background: var(--card);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: update-banner-in 0.35s ease-out;
+}
+@keyframes update-banner-in { from { opacity: 0; transform: translateY(16px); } }
+.update-overlay { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 24px; background: #000; color: #fff; }
+.update-overlay-card { width: min(380px, 100%); display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.update-overlay-card img { width: auto; height: min(52vh, 420px); max-width: 100%; border-radius: 12px; }
+.update-overlay-card strong { font-size: 20px; }
+.update-overlay-card span { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.update-progress { width: 100%; height: 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); overflow: hidden; }
+.update-progress-fill { height: 100%; border-radius: 999px; background: #facc15; transition: width 0.08s linear; }
