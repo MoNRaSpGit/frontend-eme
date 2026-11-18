@@ -52,30 +52,11 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
 
       <div className="form">
         <div className="client-row">
-          <input
-            placeholder="Nuevo cliente"
-            list={payment === "cuenta" ? "eme-clientes" : undefined}
-            value={clientName}
-            onChange={(event) => {
-              const value = event.target.value;
-              setClientName(value);
-              // Solo en cuenta corriente: si coincide con un cliente existente, completa telefono y direccion.
-              const match = payment !== "cuenta" ? undefined : clients.find((client) => client.name.toLowerCase() === value.trim().toLowerCase());
-              if (match) {
-                if (!phone) setPhone(match.phone);
-                if (!address && match.address) setAddress(match.address);
-              }
-            }}
-          />
-          {payment === "cuenta" && (
-            <datalist id="eme-clientes">
-              {clients.map((client) => (
-                <option key={client.id} value={client.name} />
-              ))}
-            </datalist>
-          )}
-          <input placeholder="Teléfono" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
-          <input placeholder="Dirección" value={address} onChange={(event) => setAddress(event.target.value)} />
+          {/* 18/11/2026: sin sugerencias ni nada precargado. Los clientes guardados
+              se eligen solo en la lista de cuenta corriente (abajo). */}
+          <input placeholder="Nuevo cliente" autoComplete="off" value={clientName} onChange={(event) => setClientName(event.target.value)} />
+          <input placeholder="Teléfono" inputMode="tel" autoComplete="off" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <input placeholder="Dirección" autoComplete="off" value={address} onChange={(event) => setAddress(event.target.value)} />
         </div>
 
         <div className="seg">
