@@ -6,6 +6,7 @@ import { NuevoPedidoScreen } from "./screens/NuevoPedidoScreen";
 import { PedidosScreen } from "./screens/PedidosScreen";
 import { ProductosScreen } from "./screens/ProductosScreen";
 import { SyncBadge } from "./components/SyncBadge";
+import { PrinterSettings } from "./components/PrinterSettings";
 import { trackActivity } from "../../shared/state/activityLog";
 import { resetDemo, useEme } from "./eme.store";
 
@@ -23,6 +24,7 @@ const TABS: { id: Tab; icon: string; label: string }[] = [
 export function CajaPage({ onLogout }: { onLogout?: () => void }) {
   const { orders } = useEme();
   const [tab, setTab] = useState<Tab>("nuevo");
+  const [showPrinter, setShowPrinter] = useState(false);
 
   function openTab(next: Tab) {
     setTab(next);
@@ -47,6 +49,9 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
         </div>
         <div className="row">
           <SyncBadge />
+          <button type="button" className="btn small" onClick={() => setShowPrinter(true)}>
+            🖨 Impresora
+          </button>
           <button type="button" className="btn small reset-top" onClick={confirmReset}>
             Reiniciar demo
           </button>
@@ -85,6 +90,7 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
       </button>
 
       <IncomingOrders orders={incoming} />
+      {showPrinter && <PrinterSettings onClose={() => setShowPrinter(false)} />}
     </div>
   );
 }

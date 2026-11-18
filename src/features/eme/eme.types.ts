@@ -7,7 +7,9 @@ export type Payment = "efectivo" | "tarjeta" | "cuenta";
 // ingredients (18/11/2026): opcional; si no tiene, no se muestra nada.
 export type Product = { id: string; category: string; name: string; price: number; cost: number; emoji: string; ingredients?: string[] };
 // "name" ya incluye los extras elegidos (ej: "Pizza muzzarella + panceta") y "price" los suma.
-export type OrderLine = { productId: string; name: string; price: number; qty: number; extras?: string[] };
+// baseName = nombre del producto solo (para la comanda); removed = ingredientes
+// que se destildaron al tomar el pedido ("SIN lechuga") (18/11/2026).
+export type OrderLine = { productId: string; name: string; price: number; qty: number; extras?: string[]; baseName?: string; removed?: string[] };
 
 export type Order = {
   id: string;

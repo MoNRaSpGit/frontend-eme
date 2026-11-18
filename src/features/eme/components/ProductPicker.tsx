@@ -16,21 +16,30 @@ export function ProductPicker({ lines, onChange }: Props) {
 
   const [extrasFor, setExtrasFor] = useState<Product | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);
+  // Ingredientes destildados ("va SIN ...") del producto abierto (18/11/2026).
+  const [removed, setRemoved] = useState<string[]>([]);
 
-  // Suma una linea; si ya existe igual (mismo producto y mismos extras) sube la cantidad.
-  function addLine(product: Product, extraIds: string[]) {
+  // Suma una linea; si ya existe igual (mismo producto, extras y "sin") sube la cantidad.
+  function addLine(product: Product, extraIds: string[], removedItems: string[] = []) {
     const extras = PIZZA_EXTRAS.filter((extra) => extraIds.includes(extra.id));
-    const name = extras.length ? product.name + " + " + extras.map((extra) => extra.label.toLowerCase()).join(", ") : product.name;
+    let name = extras.length ? product.name + " + " + extras.map((extra) => extra.label.toLowerCase()).join(", ") : product.name;
+    if (removedItems.length) name += " · sin " + removedItems.join(", ");
     const price = product.price + extras.reduce((sum, extra) => sum + extra.price, 0);
     const existing = lines.find((line) => line.name === name);
     if (existing) onChange(lines.map((line) => (line.name === name ? { ...line, qty: line.qty + 1 } : line)));
-    else onChange([...lines, { productId: product.id, name, price, qty: 1, extras: extras.map((extra) => extra.label) }]);
+    else
+      onChange([
+        ...lines,
+        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: extras.map((extra) => extra.label), removed: removedItems }
+      ]);
   }
 
-  // Las pizzas abren las opciones de ingredientes; el resto se agrega directo.
+  // Productos con ingredientes (o pizzas, que tienen extras) abren la ventanita;
+  // el resto se agrega directo.
   function tapProduct(product: Product) {
-    if (product.category === "Pizzas") {
+    if (product.category === "Pizzas" || (product.ingredients?.length ?? 0) > 0) {
       setChosen([]);
+      setRemoved([]);
       setExtrasFor(product);
     } else {
       addLine(product, []);
@@ -98,9 +107,29 @@ export function ProductPicker({ lines, onChange }: Props) {
             <h2>
               {extrasFor.emoji} {extrasFor.name}
             </h2>
-            <p className="hint">¿Querés agregarle algo?</p>
+            {(extrasFor.ingredients?.length ?? 0) > 0 && (
+              <>
+                <p className="hint">Ingredientes: destildá lo que va SIN.</p>
+                <div className="extras">
+                  {extrasFor.ingredients!.map((item) => {
+                    const on = !removed.includes(item);
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        className={on ? "extra on" : "extra off"}
+                        onClick={() => setRemoved(on ? [...removed, item] : removed.filter((value) => value !== item))}
+                      >
+                        <span>{on ? "✓ " + item : "SIN " + item}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {extrasFor.category === "Pizzas" && <p className="hint">¿Querés agregarle algo?</p>}
             <div className="extras">
-              {PIZZA_EXTRAS.map((extra) => {
+              {(extrasFor.category === "Pizzas" ? PIZZA_EXTRAS : []).map((extra) => {
                 const on = chosen.includes(extra.id);
                 return (
                   <button
@@ -120,7 +149,7 @@ export function ProductPicker({ lines, onChange }: Props) {
                 type="button"
                 className="btn primary"
                 onClick={() => {
-                  addLine(extrasFor, chosen);
+                  addLine(extrasFor, chosen, removed);
                   setExtrasFor(null);
                 }}
               >

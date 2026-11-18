@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
-import { TicketModal } from "../components/TicketModal";
+import { PrintModal } from "../components/PrintModal";
 import { createOrder, useEme } from "../eme.store";
 import type { Order, OrderLine, Payment } from "../eme.types";
 
 // La caja ingresa el pedido que llega por WhatsApp o en el mostrador.
 export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
-  const { clients, couriers } = useEme();
+  const { clients } = useEme();
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -105,7 +105,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         Ingresar pedido
       </button>
 
-      {created && <TicketModal order={created} couriers={couriers} onClose={closeTicket} />}
+      {/* El pedido ya esta guardado: se imprime (o simula) apenas se ingresa. */}
+      {created && <PrintModal order={created} autoPrint onClose={closeTicket} />}
     </section>
   );
 }

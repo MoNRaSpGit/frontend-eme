@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TicketModal } from "../components/TicketModal";
+import { PrintModal } from "../components/PrintModal";
 import { assignCourier, markDelivered, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
 import { PROFIT_KEY, loadProfitPercent } from "../eme.profit";
@@ -156,7 +156,7 @@ export function PedidosScreen() {
                   <div className="row between">
                     <b>Total {money(order.total)}</b>
                     <button type="button" className="btn small" onClick={() => setTicket(order)}>
-                      🧾 Ticket
+                      🖨 Reimprimir
                     </button>
                   </div>
                 </div>
@@ -166,7 +166,7 @@ export function PedidosScreen() {
         })}
       </div>
 
-      {ticket && <TicketModal order={ticket} couriers={couriers} onClose={() => setTicket(null)} />}
+      {ticket && <PrintModal order={ticket} autoPrint={false} onClose={() => setTicket(null)} />}
     </section>
   );
 }
