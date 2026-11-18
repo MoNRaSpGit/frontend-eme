@@ -21,9 +21,10 @@ export function MesasScreen({ onLogout }: { onLogout: () => void }) {
     return "libre";
   }
 
-  function send() {
+  async function send() {
     if (table === null || lines.length === 0) return;
-    const order = createOrder({ channel: "mesa", kind: "salon", table, lines, note });
+    const order = await createOrder({ channel: "mesa", kind: "salon", table, lines, note });
+    if (!order) return;
     setSent("Pedido #" + order.number + " de la mesa " + table + " enviado a caja ✓");
     setTable(null);
     setLines([]);

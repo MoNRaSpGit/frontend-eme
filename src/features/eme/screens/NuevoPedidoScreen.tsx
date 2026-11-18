@@ -16,11 +16,15 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Order | null>(null);
 
-  function submit() {
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (saving) return;
     if (lines.length === 0) return setError("Agregá al menos un producto.");
     if (payment === "cuenta" && !clientName.trim()) return setError("Para cuenta corriente poné el nombre del cliente.");
     setError("");
-    const order = createOrder({
+    setSaving(true);
+    const order = await createOrder({
       channel: "mostrador",
       // Con direccion va por delivery; sin direccion, retira en el local.
       kind: address.trim() ? "delivery" : "retiro",
@@ -32,6 +36,9 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       payment,
       clientId: null // se vincula por nombre; si no existe, se crea en cuenta corriente
     });
+    setSaving(false);
+    // Si no se pudo guardar, el formulario queda como estaba para reintentar.
+    if (!order) return;
     setCreated(order);
     setLines([]);
     setNote("");
@@ -101,8 +108,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       <ProductPicker lines={lines} onChange={setLines} />
       <textarea className="note-input" placeholder="Nota para cocina" value={note} onChange={(event) => setNote(event.target.value)} />
       {error && <p className="error">{error}</p>}
-      <button type="button" className="btn primary wide" onClick={submit}>
-        Ingresar pedido
+      <button type="button" className="btn primary wide" onClick={() => void submit()} disabled={saving}>
+        {saving ? "Guardando…" : "Ingresar pedido"}
       </button>
 
       {/* El pedido ya esta guardado: se imprime (o simula) apenas se ingresa. */}

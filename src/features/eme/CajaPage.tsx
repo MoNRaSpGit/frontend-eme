@@ -8,7 +8,7 @@ import { ProductosScreen } from "./screens/ProductosScreen";
 import { SyncBadge } from "./components/SyncBadge";
 import { PrinterSettings } from "./components/PrinterSettings";
 import { trackActivity } from "../../shared/state/activityLog";
-import { resetDemo, useEme } from "./eme.store";
+import { useEme } from "./eme.store";
 
 type Tab = "pedidos" | "nuevo" | "cuenta" | "productos" | "mes";
 
@@ -31,10 +31,6 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
     trackActivity("seccion", "Abrió " + (TABS.find((item) => item.id === next)?.label ?? next));
   }
 
-  function confirmReset() {
-    if (window.confirm("¿Volver a los datos de ejemplo?")) resetDemo();
-  }
-
   const incoming = orders.filter((order) => order.status === "por_aceptar");
 
   return (
@@ -51,9 +47,6 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
           <SyncBadge />
           <button type="button" className="btn small" onClick={() => setShowPrinter(true)}>
             🖨 Impresora
-          </button>
-          <button type="button" className="btn small reset-top" onClick={confirmReset}>
-            Reiniciar demo
           </button>
           {onLogout ? (
             <button type="button" className="btn small" onClick={onLogout}>
@@ -83,11 +76,6 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
           ))}
         </nav>
       </div>
-
-      {/* En celular el boton va abajo, como "Ingresar pedido"; en PC queda arriba. */}
-      <button type="button" className="btn wide reset-bottom" onClick={confirmReset}>
-        Reiniciar demo
-      </button>
 
       <IncomingOrders orders={incoming} />
       {showPrinter && <PrinterSettings onClose={() => setShowPrinter(false)} />}

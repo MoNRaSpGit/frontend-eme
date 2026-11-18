@@ -12,7 +12,10 @@ export function ProductPicker({ lines, onChange }: Props) {
   const eme = useEme();
   const MENU = productsOf(eme);
   const MENU_CATEGORIES = categoriesOf(eme);
-  const [category, setCategory] = useState<string>(MENU_CATEGORIES[0] ?? "");
+  const [pickedCategory, setCategory] = useState<string>("");
+  // Los productos llegan del servidor un instante despues de abrir: si todavia no
+  // se eligio categoria (o ya no existe), se muestra la primera.
+  const category = MENU_CATEGORIES.includes(pickedCategory) ? pickedCategory : (MENU_CATEGORIES[0] ?? "");
 
   const [extrasFor, setExtrasFor] = useState<Product | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);

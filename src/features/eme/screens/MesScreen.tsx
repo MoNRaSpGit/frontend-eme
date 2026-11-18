@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
-import { isSameMonth, money } from "../eme.format";
+import { money } from "../eme.format";
 import { loadProfitPercent } from "../eme.profit";
 import type { Order } from "../eme.types";
 
@@ -11,28 +11,17 @@ const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Jul
 const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-// Total por dia. El mes actual sale de los pedidos reales; los meses
-// anteriores son datos de ejemplo (demo) y los futuros quedan en cero.
+// Total por dia, solo con pedidos reales entregados (18/11/2026: se sacaron los
+// meses de ejemplo). La app trae los pedidos desde el 1ro del mes pasado.
 function dayTotals(year: number, month: number, orders: Order[], now: Date): number[] {
   const days = new Date(year, month + 1, 0).getDate();
-  const key = year * 12 + month;
-  const nowKey = now.getFullYear() * 12 + now.getMonth();
-  if (key > nowKey) return Array(days).fill(0);
-  if (key === nowKey) {
-    const totals = Array(days).fill(0) as number[];
-    for (const order of orders) {
-      if (order.status === "entregado" && isSameMonth(order.createdAt, now)) totals[new Date(order.createdAt).getDate() - 1] += order.total;
-    }
-    return totals;
+  const totals = Array(days).fill(0) as number[];
+  void now;
+  for (const order of orders) {
+    const created = new Date(order.createdAt);
+    if (order.status === "entregado" && created.getFullYear() === year && created.getMonth() === month) totals[created.getDate() - 1] += order.total;
   }
-  let seedValue = (key * 7919) % 233280 || 1;
-  return Array.from({ length: days }, () => {
-    seedValue = (seedValue * 9301 + 49297) % 233280;
-    const r = seedValue / 233280;
-    // Meses de ejemplo que crecen: los mas viejos venden menos y se va subiendo hasta hoy.
-    const average = Math.max(700, 2000 - (nowKey - key - 1) * 250);
-    return r < 0.1 ? 0 : Math.round(((0.6 + r * 0.8) * average) / 10) * 10;
-  });
+  return totals;
 }
 
 export function MesScreen() {

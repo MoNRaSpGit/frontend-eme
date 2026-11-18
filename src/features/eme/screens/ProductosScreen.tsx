@@ -44,7 +44,7 @@ export function ProductosScreen() {
 
   function submit() {
     const priceNum = Number(price);
-    const finalCategory = category === NEW_CATEGORY ? newCategory.trim() : category;
+    const finalCategory = category === NEW_CATEGORY ? newCategory.trim() : category || categories[0] || "";
     if (!name.trim()) return setError("Poné el nombre del producto.");
     if (!price.trim() || !Number.isFinite(priceNum) || priceNum < 0) return setError("Poné un precio válido.");
     if (!finalCategory) return setError("Elegí o escribí una categoría.");
@@ -66,7 +66,7 @@ export function ProductosScreen() {
       <div className="form">
         <input placeholder="Nombre (ej: Hamburguesa doble carne)" autoComplete="off" value={name} onChange={(event) => setName(event.target.value)} />
         <input placeholder="Precio" inputMode="numeric" autoComplete="off" value={price} onChange={(event) => setPrice(event.target.value.replace(/[^\d]/g, ""))} />
-        <select className="client-select" value={category} onChange={(event) => setCategory(event.target.value)}>
+        <select className="client-select" value={category || categories[0] || ""} onChange={(event) => setCategory(event.target.value)}>
           {categories.map((item) => (
             <option key={item} value={item}>
               {item}

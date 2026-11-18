@@ -37,7 +37,7 @@ export type AccountClient = { id: number; name: string; phone: string; address?:
 
 export type EmeState = {
   orders: Order[];
-  nextNumber: number;
+  nextNumber?: number;
   clients: AccountClient[];
   couriers: Courier[];
   // Productos y categorias editables desde "Productos" (18/11/2026). Si todavia
