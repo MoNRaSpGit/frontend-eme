@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { MENU, MENU_CATEGORIES, PIZZA_EXTRAS } from "../eme.menu";
+import { PIZZA_EXTRAS } from "../eme.menu";
 import { money } from "../eme.format";
+import { categoriesOf, productsOf, useEme } from "../eme.store";
 import type { OrderLine, Product } from "../eme.types";
 
 type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void };
 
 // Menu tocable + carrito. Lo usan Mesas (levantar pedido) y Caja (nuevo pedido).
+// Productos y categorias salen de "Productos" (18/11/2026).
 export function ProductPicker({ lines, onChange }: Props) {
-  const [category, setCategory] = useState<string>(MENU_CATEGORIES[0]);
+  const eme = useEme();
+  const MENU = productsOf(eme);
+  const MENU_CATEGORIES = categoriesOf(eme);
+  const [category, setCategory] = useState<string>(MENU_CATEGORIES[0] ?? "");
 
   const [extrasFor, setExtrasFor] = useState<Product | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);
@@ -55,6 +60,7 @@ export function ProductPicker({ lines, onChange }: Props) {
             <button key={item.id} type="button" className={qty > 0 ? "tile picked" : "tile"} onClick={() => tapProduct(item)}>
               <span className="tile-emoji">{item.emoji}</span>
               <strong>{item.name}</strong>
+              {item.ingredients && item.ingredients.length > 0 ? <span className="tile-ingredients">{item.ingredients.join(", ")}</span> : null}
               <span className="tile-price">{money(item.price)}</span>
               {qty > 0 && <span className="tile-badge">{qty}</span>}
             </button>

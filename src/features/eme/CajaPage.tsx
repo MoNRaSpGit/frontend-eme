@@ -4,16 +4,18 @@ import { CuentaCorrienteScreen } from "./screens/CuentaCorrienteScreen";
 import { MesScreen } from "./screens/MesScreen";
 import { NuevoPedidoScreen } from "./screens/NuevoPedidoScreen";
 import { PedidosScreen } from "./screens/PedidosScreen";
+import { ProductosScreen } from "./screens/ProductosScreen";
 import { SyncBadge } from "./components/SyncBadge";
 import { trackActivity } from "../../shared/state/activityLog";
 import { resetDemo, useEme } from "./eme.store";
 
-type Tab = "pedidos" | "nuevo" | "cuenta" | "mes";
+type Tab = "pedidos" | "nuevo" | "cuenta" | "productos" | "mes";
 
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: "nuevo", icon: "➕", label: "Nuevo pedido" },
   { id: "pedidos", icon: "📋", label: "Pedidos" },
   { id: "cuenta", icon: "📒", label: "Cuenta corriente" },
+  { id: "productos", icon: "🍔", label: "Productos" },
   { id: "mes", icon: "📈", label: "Mes" }
 ];
 
@@ -63,6 +65,7 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
           {tab === "pedidos" && <PedidosScreen />}
           {tab === "nuevo" && <NuevoPedidoScreen onCreated={() => setTab("pedidos")} />}
           {tab === "cuenta" && <CuentaCorrienteScreen />}
+          {tab === "productos" && <ProductosScreen />}
           {tab === "mes" && <MesScreen />}
         </div>
         <nav className="sidebar">

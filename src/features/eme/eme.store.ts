@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { API_BASE_URL } from "../../shared/config/api";
 import { trackActivity } from "../../shared/state/activityLog";
-import { MENU } from "./eme.menu";
-import type { AccountClient, Channel, EmeState, Kind, Order, OrderLine, Payment } from "./eme.types";
+import { MENU, MENU_CATEGORIES } from "./eme.menu";
+import type { AccountClient, Channel, EmeState, Kind, Order, OrderLine, Payment, Product } from "./eme.types";
 
 // Demo sin backend: el estado vive en localStorage y se sincroniza entre
 // pestañas del mismo navegador (asi se prueba Mesas en una y Caja en otra).
@@ -10,6 +10,7 @@ const KEY = "eme-demo-state-v3";
 
 function totalsOf(lines: OrderLine[]) {
   const total = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
+  // Costo: el del menu de ejemplo; los productos nuevos no cargan costo (cuenta 0).
   const cost = lines.reduce((sum, line) => sum + (MENU.find((item) => item.id === line.productId)?.cost ?? 0) * line.qty, 0);
   return { total, cost };
 }
@@ -403,6 +404,61 @@ export function registerPayment(clientId: number, amount: number) {
         : client
     )
   }));
+}
+
+// ---------------- Productos y categorias (18/11/2026) ----------------
+// Mientras no se edite nada se usa el menu de ejemplo; al primer cambio se copia
+// al estado y desde ahi todo se guarda (y se sincroniza) como el resto.
+export function productsOf(current: EmeState): Product[] {
+  return current.products ?? MENU;
+}
+
+export function categoriesOf(current: EmeState): string[] {
+  return current.categories ?? [...MENU_CATEGORIES];
+}
+
+export type ProductInput = { id?: string; name: string; price: number; category: string; ingredients: string[] };
+
+export function saveProduct(input: ProductInput) {
+  mutate((current) => {
+    const products = productsOf(current);
+    const categories = categoriesOf(current);
+    const nextCategories = categories.includes(input.category) ? categories : [...categories, input.category];
+    const ingredients = input.ingredients.map((item) => item.trim()).filter(Boolean);
+    if (input.id) {
+      return {
+        ...current,
+        categories: nextCategories,
+        products: products.map((item) =>
+          item.id === input.id ? { ...item, name: input.name, price: input.price, category: input.category, ingredients } : item
+        )
+      };
+    }
+    const product: Product = {
+      id: "p" + Date.now().toString(36),
+      name: input.name,
+      price: input.price,
+      category: input.category,
+      cost: 0,
+      emoji: "🍽",
+      ingredients
+    };
+    return { ...current, categories: nextCategories, products: [...products, product] };
+  });
+}
+
+export function deleteProduct(id: string) {
+  mutate((current) => ({ ...current, categories: categoriesOf(current), products: productsOf(current).filter((item) => item.id !== id) }));
+}
+
+export function addCategory(name: string) {
+  const clean = name.trim();
+  if (!clean) return;
+  mutate((current) => {
+    const categories = categoriesOf(current);
+    if (categories.some((item) => item.toLowerCase() === clean.toLowerCase())) return current;
+    return { ...current, products: productsOf(current), categories: [...categories, clean] };
+  });
 }
 
 export function resetDemo() {
