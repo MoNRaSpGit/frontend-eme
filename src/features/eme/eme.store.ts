@@ -243,7 +243,8 @@ async function poll() {
 }
 
 if (typeof window !== "undefined") {
-  void poll();
+  // Despues de traer los datos del servidor, suma los clientes de ejemplo que falten.
+  void poll().then(() => ensureSampleClients());
   window.setInterval(() => void poll(), 2000);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) void poll();
@@ -359,6 +360,28 @@ export function assignCourier(id: string, courierId: number) {
 export function markDelivered(id: string) {
   trackActivity("accion", "Pedido marcado como entregado");
   patchOrder(id, { status: "entregado", deliveredAt: new Date().toISOString() });
+}
+
+// Clientes de ejemplo para la cuenta corriente (18/11/2026, para probar la lista).
+// Se agregan solo los que falten (por nombre); no borra ni cambia nada.
+const SAMPLE_CLIENTS = [
+  { name: "Almacén Don Pepe", phone: "098 555 111" },
+  { name: "Estudio Rivera", phone: "094 222 333" },
+  { name: "Familia Gómez", phone: "091 777 888" },
+  { name: "Panadería La Espiga", phone: "099 123 456" },
+  { name: "Oficina Martínez", phone: "092 345 678" },
+  { name: "Club Sportivo", phone: "093 876 543" }
+];
+
+export function ensureSampleClients() {
+  const missing = (current: EmeState) =>
+    SAMPLE_CLIENTS.filter((sample) => !current.clients.some((client) => client.name.trim().toLowerCase() === sample.name.toLowerCase()));
+  if (missing(state).length === 0) return;
+  mutate((current) => {
+    let nextId = Math.max(0, ...current.clients.map((item) => item.id)) + 1;
+    const added = missing(current).map((sample) => ({ id: nextId++, name: sample.name, phone: sample.phone, address: "", balance: 0, payments: [] }));
+    return added.length ? { ...current, clients: [...current.clients, ...added] } : current;
+  });
 }
 
 export function addClient(name: string, phone: string, address: string) {

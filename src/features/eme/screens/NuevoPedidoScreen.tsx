@@ -51,27 +51,6 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       <h2>Nuevo pedido</h2>
 
       <div className="form">
-        {/* Cuenta corriente: lista para elegir un cliente que ya existe (18/11/2026).
-            "Cliente nuevo" deja escribir el nombre abajo. */}
-        {payment === "cuenta" && (
-          <select
-            className="client-select"
-            value={clients.some((client) => client.name === clientName) ? clientName : ""}
-            onChange={(event) => {
-              const match = clients.find((client) => client.name === event.target.value);
-              setClientName(match ? match.name : "");
-              setPhone(match ? match.phone : "");
-              setAddress(match?.address ?? "");
-            }}
-          >
-            <option value="">Cliente nuevo (escribir abajo)</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.name}>
-                {client.name}
-              </option>
-            ))}
-          </select>
-        )}
         <div className="client-row">
           <input
             placeholder="Nuevo cliente"
@@ -106,6 +85,30 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
             </button>
           ))}
         </div>
+        {/* Cuenta corriente (18/11/2026): en el renglon de abajo, una lista a lo
+            ancho con los clientes de cuenta corriente, solo para elegir uno. */}
+        {payment === "cuenta" && (
+          <select
+            className="client-select"
+            value={clients.some((client) => client.name === clientName) ? clientName : ""}
+            onChange={(event) => {
+              const match = clients.find((client) => client.name === event.target.value);
+              if (!match) return;
+              setClientName(match.name);
+              setPhone(match.phone);
+              setAddress(match.address ?? "");
+            }}
+          >
+            <option value="" disabled>
+              Elegí un cliente de cuenta corriente
+            </option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.name}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+        )}
         {payment === "cuenta" && (
           <p className="hint">
             Se anota en la cuenta corriente de {clientName.trim() || "…"}
