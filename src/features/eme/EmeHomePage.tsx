@@ -36,8 +36,10 @@ export function EmeHomePage() {
     setRole(next);
   }
 
+  // 18/11/2026: se entra directo al Mostrador (es el unico uso real). La pantalla
+  // de "Mesas / Mostrador" queda en el codigo por si se vuelve a usar.
   if (role === "mesas") return <MesasScreen onLogout={() => choose(null)} />;
-  if (role === "caja") return <CajaPage onLogout={() => choose(null)} />;
+  return <CajaPage />;
 
   return (
     <main className="login">

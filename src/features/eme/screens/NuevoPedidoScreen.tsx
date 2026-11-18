@@ -51,6 +51,27 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       <h2>Nuevo pedido</h2>
 
       <div className="form">
+        {/* Cuenta corriente: lista para elegir un cliente que ya existe (18/11/2026).
+            "Cliente nuevo" deja escribir el nombre abajo. */}
+        {payment === "cuenta" && (
+          <select
+            className="client-select"
+            value={clients.some((client) => client.name === clientName) ? clientName : ""}
+            onChange={(event) => {
+              const match = clients.find((client) => client.name === event.target.value);
+              setClientName(match ? match.name : "");
+              setPhone(match ? match.phone : "");
+              setAddress(match?.address ?? "");
+            }}
+          >
+            <option value="">Cliente nuevo (escribir abajo)</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.name}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+        )}
         <div className="client-row">
           <input
             placeholder="Nuevo cliente"

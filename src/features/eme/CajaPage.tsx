@@ -18,7 +18,7 @@ const TABS: { id: Tab; icon: string; label: string }[] = [
 ];
 
 // Rol "Caja / Mostrador": ve todo, como administrador.
-export function CajaPage({ onLogout }: { onLogout: () => void }) {
+export function CajaPage({ onLogout }: { onLogout?: () => void }) {
   const { orders } = useEme();
   const [tab, setTab] = useState<Tab>("nuevo");
 
@@ -48,9 +48,11 @@ export function CajaPage({ onLogout }: { onLogout: () => void }) {
           <button type="button" className="btn small reset-top" onClick={confirmReset}>
             Reiniciar demo
           </button>
-          <button type="button" className="btn small" onClick={onLogout}>
-            Salir
-          </button>
+          {onLogout ? (
+            <button type="button" className="btn small" onClick={onLogout}>
+              Salir
+            </button>
+          ) : null}
         </div>
       </header>
 

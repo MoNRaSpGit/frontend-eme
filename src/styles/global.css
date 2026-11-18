@@ -5,15 +5,16 @@
   --line: #3a3027;
   --text: #f7f1ea;
   --muted: #a99a8b;
-  --accent: #ff6b35;
-  --accent-2: #ffb347;
+  /* 18/11/2026: colores mas sobrios (antes naranja fuerte con degradé brillante). */
+  --accent: #d9774a;
+  --accent-2: #e0a06a;
   --ok: #4ade80;
   --bad: #f87171;
-  --grad: linear-gradient(135deg, #ff6b35, #ffb347);
+  --grad: linear-gradient(135deg, #d9774a, #d18a5c);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-body { min-height: 100vh; background: radial-gradient(800px 380px at 100% -10%, rgba(255, 107, 53, 0.2), transparent), var(--bg); }
+body { min-height: 100vh; background: var(--bg); }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 h1, h2, h3, p { margin: 0; }
@@ -112,8 +113,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .form { display: grid; gap: 10px; margin-bottom: 12px; }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; gap: 4px; }
-.seg button { background: transparent; border: 0; border-radius: 10px; padding: 11px 6px; color: var(--muted); font-weight: 600; }
-.seg button.on { background: var(--grad); color: #1d0e05; }
+/* 18/11/2026: cada boton con su borde, para que se vean los limites. */
+.seg button { background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 11px 6px; color: var(--muted); font-weight: 600; }
+.seg button.on { background: var(--accent); border-color: var(--accent); color: #1d0e05; }
+.client-select { width: 100%; margin-bottom: 8px; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; }
 
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 8px; }
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 4px; }
