@@ -168,10 +168,10 @@ export function categoriesOf(current: EmeState): string[] {
   return current.categories ?? [];
 }
 
-export type ProductInput = { id?: string; name: string; price: number; category: string; ingredients: string[] };
+export type ProductInput = { id?: string; name: string; price: number; cost?: number; category: string; ingredients: string[] };
 
 export function saveProduct(input: ProductInput) {
-  const body = { name: input.name, price: input.price, category: input.category, ingredients: input.ingredients.map((item) => item.trim()).filter(Boolean) };
+  const body = { name: input.name, price: input.price, cost: input.cost, category: input.category, ingredients: input.ingredients.map((item) => item.trim()).filter(Boolean) };
   void (input.id ? write("/eme/products/" + encodeURIComponent(input.id), "PUT", body) : write("/eme/products", "POST", body));
 }
 

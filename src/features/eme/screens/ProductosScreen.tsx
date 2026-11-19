@@ -18,6 +18,8 @@ export function ProductosScreen() {
   const [category, setCategory] = useState(categories[0] ?? "");
   const [newCategory, setNewCategory] = useState("");
   const [ingredients, setIngredients] = useState("");
+  // Ganancia en $ por unidad (19/11/2026). Se guarda como costo = precio - ganancia.
+  const [profit, setProfit] = useState("");
   const [error, setError] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -28,6 +30,7 @@ export function ProductosScreen() {
     setCategory(categories[0] ?? "");
     setNewCategory("");
     setIngredients("");
+    setProfit("");
     setError("");
   }
 
@@ -38,6 +41,7 @@ export function ProductosScreen() {
     setCategory(product.category);
     setNewCategory("");
     setIngredients((product.ingredients ?? []).join(", "));
+    setProfit(product.cost > 0 ? String(product.price - product.cost) : "");
     setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -48,11 +52,14 @@ export function ProductosScreen() {
     if (!name.trim()) return setError("Poné el nombre del producto.");
     if (!price.trim() || !Number.isFinite(priceNum) || priceNum < 0) return setError("Poné un precio válido.");
     if (!finalCategory) return setError("Elegí o escribí una categoría.");
+    const profitNum = profit.trim() ? Number(profit) : null;
+    if (profitNum !== null && (!Number.isFinite(profitNum) || profitNum > priceNum)) return setError("La ganancia no puede ser mayor que el precio.");
     // saveProduct suma la categoria nueva si no existia.
     saveProduct({
       id: editingId ?? undefined,
       name: name.trim(),
       price: Math.round(priceNum),
+      cost: profitNum === null ? undefined : Math.round(priceNum - profitNum),
       category: finalCategory,
       ingredients: ingredients.split(",")
     });
@@ -66,6 +73,7 @@ export function ProductosScreen() {
       <div className="form">
         <input placeholder="Nombre (ej: Hamburguesa doble carne)" autoComplete="off" value={name} onChange={(event) => setName(event.target.value)} />
         <input placeholder="Precio" inputMode="numeric" autoComplete="off" value={price} onChange={(event) => setPrice(event.target.value.replace(/[^\d]/g, ""))} />
+        <input placeholder="Ganancia en $ (ej: 30)" inputMode="numeric" autoComplete="off" value={profit} onChange={(event) => setProfit(event.target.value.replace(/[^\d]/g, ""))} />
         <select className="client-select" value={category || categories[0] || ""} onChange={(event) => setCategory(event.target.value)}>
           {categories.map((item) => (
             <option key={item} value={item}>
@@ -110,7 +118,10 @@ export function ProductosScreen() {
                   <b>{item.name}</b>
                   {item.ingredients && item.ingredients.length > 0 ? <span className="hint">{item.ingredients.join(", ")}</span> : null}
                 </div>
-                <b className="prod-price">{money(item.price)}</b>
+                <div className="prod-price">
+                  <b>{money(item.price)}</b>
+                  {item.cost > 0 ? <small className="hint ok"> gana {money(item.price - item.cost)}</small> : null}
+                </div>
                 {confirmDeleteId === item.id ? (
                   <div className="row">
                     <button
