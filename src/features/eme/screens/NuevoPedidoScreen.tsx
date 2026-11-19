@@ -62,8 +62,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
           {/* 18/11/2026: sin sugerencias ni nada precargado. Los clientes guardados
               se eligen solo en la lista de cuenta corriente (abajo). */}
           <input placeholder="Nuevo cliente" autoComplete="off" value={clientName} onChange={(event) => setClientName(event.target.value)} />
-          <input placeholder="Teléfono" inputMode="tel" autoComplete="off" value={phone} onChange={(event) => setPhone(event.target.value)} />
           <input placeholder="Dirección" autoComplete="off" value={address} onChange={(event) => setAddress(event.target.value)} />
+          <input placeholder="Teléfono" inputMode="tel" autoComplete="off" value={phone} onChange={(event) => setPhone(event.target.value)} />
         </div>
 
         <div className="seg">
