@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
-import { money } from "../eme.format";
+import { businessDate, money } from "../eme.format";
 import { loadProfitPercent } from "../eme.profit";
 import type { Order } from "../eme.types";
 
@@ -18,7 +18,7 @@ function dayTotals(year: number, month: number, orders: Order[], now: Date): num
   const totals = Array(days).fill(0) as number[];
   void now;
   for (const order of orders) {
-    const created = new Date(order.createdAt);
+    const created = businessDate(order.createdAt);
     if (order.status === "entregado" && created.getFullYear() === year && created.getMonth() === month) totals[created.getDate() - 1] += order.total;
   }
   return totals;
@@ -26,7 +26,7 @@ function dayTotals(year: number, month: number, orders: Order[], now: Date): num
 
 export function MesScreen() {
   const { orders } = useEme();
-  const now = new Date();
+  const now = businessDate(); // dia comercial (corte 3 am)
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [openWeeks, setOpenWeeks] = useState<Set<number>>(new Set([1]));

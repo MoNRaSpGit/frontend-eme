@@ -342,3 +342,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .update-overlay-card span { font-variant-numeric: tabular-nums; opacity: 0.85; }
 .update-progress { width: 100%; height: 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); overflow: hidden; }
 .update-progress-fill { height: 100%; border-radius: 999px; background: #facc15; transition: width 0.08s linear; }
+
+/* 19/11/2026: boton chico "Delivery" en Pedidos (por defecto el pedido es mostrador). */
+.kind-toggle { justify-self: start; padding: 5px 12px; font-size: 13px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-weight: 600; }
+.kind-toggle.on { border-color: var(--accent); color: var(--accent-2); background: rgba(255, 107, 53, 0.12); }
+.couriers .btn.courier { padding: 5px 12px; font-size: 13px; border-radius: 999px; min-height: 0; }

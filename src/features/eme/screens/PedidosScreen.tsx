@@ -128,14 +128,14 @@ export function PedidosScreen() {
 
                   {/* 19/11/2026: elegir mostrador o delivery mientras se prepara. */}
                   {order.status === "aceptado" && order.kind !== "salon" && (
-                    <div className="seg">
-                      <button type="button" className={order.kind === "retiro" ? "on" : ""} onClick={() => setOrderKind(order.id, "retiro")}>
-                        🏪 Mostrador
-                      </button>
-                      <button type="button" className={order.kind === "delivery" ? "on" : ""} onClick={() => setOrderKind(order.id, "delivery")}>
-                        🛵 Delivery
-                      </button>
-                    </div>
+                    // Un solo botoncito: por defecto es mostrador; tocarlo lo pasa a delivery (y otra vez lo vuelve).
+                    <button
+                      type="button"
+                      className={order.kind === "delivery" ? "kind-toggle on" : "kind-toggle"}
+                      onClick={() => setOrderKind(order.id, order.kind === "delivery" ? "retiro" : "delivery")}
+                    >
+                      🛵 Delivery{order.kind === "delivery" ? " ✓" : ""}
+                    </button>
                   )}
                   {order.status === "aceptado" && order.kind === "delivery" && (
                     <div className="couriers">
