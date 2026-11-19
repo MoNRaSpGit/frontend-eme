@@ -35,15 +35,8 @@ export function PrinterSettings({ onClose }: { onClose: () => void }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(event) => event.stopPropagation()}>
         <h2>🖨 Impresora</h2>
-        <div className="seg">
-          <button type="button" className={mode === "simulado" ? "on" : ""} onClick={() => setMode("simulado")}>
-            Simulado
-          </button>
-          <button type="button" className={mode === "qz" ? "on" : ""} onClick={() => setMode("qz")}>
-            Impresora (QZ Tray)
-          </button>
-        </div>
-        {mode === "simulado" ? (
+        {/* 19/11/2026: se saco el modo simulado, siempre imprime de verdad. */}
+        {false ? (
           <p className="hint">No imprime: al ingresar un pedido muestra en pantalla los tickets que saldrían.</p>
         ) : (
           <>

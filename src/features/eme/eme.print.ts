@@ -46,7 +46,9 @@ function write(key: string, value: string) {
 }
 
 export function getPrintMode(): PrintMode {
-  return read(MODE_KEY) === "qz" ? "qz" : "simulado";
+  // 19/11/2026: siempre impresora real (se saco el modo simulado).
+  void MODE_KEY;
+  return "qz";
 }
 export function setPrintMode(mode: PrintMode) {
   write(MODE_KEY, mode);
@@ -217,11 +219,18 @@ export type PrintResult = { mode: PrintMode; tickets: TicketKind[]; printer?: st
 export async function printOrder(order: Order, copies: Copies): Promise<PrintResult> {
   const tickets = ticketsFor(copies);
   const mode = getPrintMode();
-  if (mode === "simulado") return { mode, tickets };
 
-  const printer = getPrinterName();
-  if (!printer) throw new Error("Todavía no elegiste la impresora. Tocá \"🖨 Impresora\" arriba para elegirla.");
   await ensureQzConnected();
+  // Si no se eligio impresora en "🖨 Impresora", usa la predeterminada de Windows.
+  let printer = getPrinterName();
+  if (!printer) {
+    try {
+      printer = await qz.printers.getDefault();
+    } catch {
+      printer = null;
+    }
+  }
+  if (!printer) throw new Error("No hay impresora elegida. Tocá \"🖨 Impresora\" arriba y elegila.");
   const config = qz.configs.create(printer, { encoding: "CP437" });
   try {
     for (const ticket of tickets) {

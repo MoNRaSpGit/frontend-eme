@@ -112,8 +112,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         {saving ? "Guardando…" : "Ingresar pedido"}
       </button>
 
-      {/* El pedido ya esta guardado: se imprime (o simula) apenas se ingresa. */}
-      {created && <PrintModal order={created} autoPrint onClose={closeTicket} />}
+      {/* El pedido ya esta guardado: se elige 1 o 2 tickets y se imprime (19/11/2026). */}
+      {created && <PrintModal order={created} autoPrint={false} onClose={closeTicket} />}
     </section>
   );
 }

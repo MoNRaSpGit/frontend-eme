@@ -46,6 +46,7 @@ export function PrintModal({ order, autoPrint, onClose }: Props) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal print-modal" onClick={(event) => event.stopPropagation()}>
         <h2>Pedido #{order.number}</h2>
+        <p className="hint ok">✓ Pedido guardado. ¿Cuántos tickets imprimo?</p>
 
         <div className="seg">
           {([1, 2] as Copies[]).map((value) => (
