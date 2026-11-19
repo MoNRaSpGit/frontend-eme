@@ -234,10 +234,28 @@ export async function printOrder(order: Order, copies: Copies): Promise<PrintRes
   const config = qz.configs.create(printer, { encoding: "CP437" });
   try {
     for (const ticket of tickets) {
-      await qz.print(config, ticket === "cliente" ? buildClienteEscPos(order) : buildComandaEscPos(order));
+      const data = ticket === "cliente" ? buildClienteEscPos(order) : buildComandaEscPos(order);
+      await qz.print(config, data.map(plainText));
     }
   } catch (error) {
     throw new Error(`No se pudo imprimir en "${printer}". ${error instanceof Error ? error.message : ""}`.trim());
   }
   return { mode, tickets, printer };
+}
+
+// 19/11/2026: la termica imprimia "letras chinas" en vez de "¡" y vocales con
+// tilde. Se mandan sin tilde (á -> a, ñ -> n) y sin "¡ ¿"; los comandos ESC/POS
+// son ASCII y no se tocan.
+function plainText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[¡¿]/g, "")
+    .replace(/[º°]/g, "o")
+    .replace(/[·•]/g, "-")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/…/g, "...")
+    .replace(/[^\x00-\x7F]/g, "");
 }
