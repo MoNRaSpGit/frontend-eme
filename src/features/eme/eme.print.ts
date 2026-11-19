@@ -1,6 +1,6 @@
 import qz from "qz-tray";
 import { API_BASE_URL } from "../../shared/config/api";
-import type { Order, OrderLine } from "./eme.types";
+import type { AccountClient, Order, OrderLine } from "./eme.types";
 
 // ======================================================================
 // Impresion (18/11/2026): ticket del cliente + comanda de cocina.
@@ -258,4 +258,51 @@ function plainText(value: string): string {
     .replace(/[–—]/g, "-")
     .replace(/…/g, "...")
     .replace(/[^\x00-\x7F]/g, "");
+}
+
+// ---------------- Estado de cuenta (19/11/2026) ----------------
+// "Reimprimir" en Cuenta corriente: ticket con los pedidos y pagos del cliente
+// (los que tiene la app: desde el 1ro del mes pasado) y el saldo que debe.
+export function buildEstadoCuentaEscPos(client: AccountClient, orders: Order[]): string[] {
+  const out: string[] = [INIT, CENTER];
+  out.push(BOLD_ON + SIZE_DOUBLE + LOCAL_INFO.name + "\n" + SIZE_NORMAL + BOLD_OFF);
+  out.push(BOLD_ON + "ESTADO DE CUENTA\n" + BOLD_OFF);
+  out.push(LEFT, dash());
+  const now = new Date().toISOString();
+  out.push(pad("Fecha: " + dateText(now), "Hora: " + timeText(now)));
+  out.push(BOLD_ON + "Cliente: " + client.name + "\n" + BOLD_OFF);
+  if (client.phone) out.push("Tel: " + client.phone + "\n");
+  out.push(dash());
+  const moves = [
+    ...orders
+      .filter((order) => order.clientId === client.id && order.payment === "cuenta" && order.status !== "rechazado")
+      .map((order) => ({ date: order.createdAt, label: "Pedido #" + order.number, amount: moneyText(order.total) })),
+    ...client.payments.map((payment) => ({ date: payment.date, label: "Pago", amount: "- " + moneyText(payment.amount) }))
+  ].sort((a, b) => a.date.localeCompare(b.date));
+  if (moves.length === 0) out.push("Sin movimientos.\n");
+  for (const move of moves) out.push(pad(dateText(move.date) + "  " + move.label, move.amount));
+  out.push(dash());
+  out.push(BOLD_ON + SIZE_DOUBLE + pad("DEBE", moneyText(client.balance), WIDTH / 2) + SIZE_NORMAL + BOLD_OFF);
+  out.push(dash(), CENTER, FOOTER_TEXT + "\n", CUT);
+  return out;
+}
+
+export async function printAccountStatement(client: AccountClient, orders: Order[]): Promise<string> {
+  await ensureQzConnected();
+  let printer = getPrinterName();
+  if (!printer) {
+    try {
+      printer = await qz.printers.getDefault();
+    } catch {
+      printer = null;
+    }
+  }
+  if (!printer) throw new Error("No hay impresora elegida. Tocá \"🖨 Impresora\" arriba y elegila.");
+  const config = qz.configs.create(printer, { encoding: "CP437" });
+  try {
+    await qz.print(config, buildEstadoCuentaEscPos(client, orders).map(plainText));
+  } catch (error) {
+    throw new Error(`No se pudo imprimir en "${printer}". ${error instanceof Error ? error.message : ""}`.trim());
+  }
+  return printer;
 }

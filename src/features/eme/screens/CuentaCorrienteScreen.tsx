@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { addClient, registerPayment, useEme } from "../eme.store";
 import { dateOf, money } from "../eme.format";
+import { printAccountStatement } from "../eme.print";
 
 // Como en Joker: izquierda para agregar clientes, al medio la lista y a la
 // derecha el detalle del cliente elegido.
@@ -34,6 +35,23 @@ export function CuentaCorrienteScreen() {
     setNewName("");
     setNewPhone("");
     setNewAddress("");
+  }
+
+  const [printing, setPrinting] = useState(false);
+  const [printMsg, setPrintMsg] = useState("");
+
+  async function reprint() {
+    if (!selected) return;
+    setPrinting(true);
+    setPrintMsg("");
+    try {
+      const printer = await printAccountStatement(selected, orders);
+      setPrintMsg("✓ Impreso en \"" + printer + "\".");
+    } catch (err) {
+      setPrintMsg(err instanceof Error ? err.message : "No se pudo imprimir.");
+    } finally {
+      setPrinting(false);
+    }
   }
 
   function pay() {
@@ -70,7 +88,10 @@ export function CuentaCorrienteScreen() {
           <input placeholder="🔎 Buscar cliente…" value={search} onChange={(event) => setSearch(event.target.value)} />
           <div className="cc-list">
             {filtered.map((client) => (
-              <button key={client.id} type="button" className={client.id === selectedId ? "cc-item on" : "cc-item"} onClick={() => setSelectedId(client.id)}>
+              <button key={client.id} type="button" className={client.id === selectedId ? "cc-item on" : "cc-item"} onClick={() => {
+                  setSelectedId(client.id);
+                  setPrintMsg("");
+                }}>
                 <span>
                   <strong>{client.name}</strong>
                   <small>{client.phone || "Sin teléfono"}</small>
@@ -127,6 +148,11 @@ export function CuentaCorrienteScreen() {
                   Pagó
                 </button>
               </div>
+              {/* 19/11/2026: imprime el estado de cuenta (lo que debe y sus movimientos). */}
+              <button type="button" className="btn" disabled={printing} onClick={() => void reprint()}>
+                {printing ? "Imprimiendo…" : "🖨 Reimprimir ticket"}
+              </button>
+              {printMsg && <p className={printMsg.startsWith("✓") ? "hint ok" : "error"}>{printMsg}</p>}
             </div>
           )}
         </div>
