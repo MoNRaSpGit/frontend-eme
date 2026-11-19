@@ -27,6 +27,9 @@ export function PrintModal({ order, autoPrint, onClose }: Props) {
     setDefaultCopies(chosen);
     try {
       setResult(await printOrder(order, chosen));
+      // 19/11/2026: si imprimio bien, la ventana se cierra sola (no queda para reimprimir).
+      onClose();
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo imprimir.");
     } finally {
