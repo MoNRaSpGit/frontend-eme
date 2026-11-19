@@ -4,7 +4,7 @@ import { getPrintMode, getPrinterName, listPrinters, setPrintMode, setPrinterNam
 // Configuracion de la impresora (18/11/2026): modo simulado (sin impresora) o
 // QZ Tray (impresora termica real). Se guarda en esta computadora.
 export function PrinterSettings({ onClose }: { onClose: () => void }) {
-  const [mode, setMode] = useState<PrintMode>(getPrintMode);
+  const [mode] = useState<PrintMode>(getPrintMode);
   const [printer, setPrinter] = useState(getPrinterName() ?? "");
   const [printers, setPrinters] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);

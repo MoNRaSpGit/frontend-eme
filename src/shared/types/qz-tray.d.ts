@@ -6,6 +6,7 @@ declare module "qz-tray" {
     };
     printers: {
       find: () => Promise<string[]>;
+    getDefault: () => Promise<string>;
     };
     configs: {
       create: (printer: string, options?: Record<string, unknown>) => unknown;
