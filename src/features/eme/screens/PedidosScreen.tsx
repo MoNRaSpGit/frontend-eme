@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PrintModal } from "../components/PrintModal";
-import { assignCourier, markDelivered, useEme } from "../eme.store";
+import { assignCourier, markDelivered, setOrderKind, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
 import { PROFIT_KEY, loadProfitPercent } from "../eme.profit";
 import type { Order, Status } from "../eme.types";
@@ -126,6 +126,17 @@ export function PedidosScreen() {
                   </ul>
                   {order.note && <p className="note">📝 {order.note}</p>}
 
+                  {/* 19/11/2026: elegir mostrador o delivery mientras se prepara. */}
+                  {order.status === "aceptado" && order.kind !== "salon" && (
+                    <div className="seg">
+                      <button type="button" className={order.kind === "retiro" ? "on" : ""} onClick={() => setOrderKind(order.id, "retiro")}>
+                        🏪 Mostrador
+                      </button>
+                      <button type="button" className={order.kind === "delivery" ? "on" : ""} onClick={() => setOrderKind(order.id, "delivery")}>
+                        🛵 Delivery
+                      </button>
+                    </div>
+                  )}
                   {order.status === "aceptado" && order.kind === "delivery" && (
                     <div className="couriers">
                       <span className="hint">Mandar con:</span>

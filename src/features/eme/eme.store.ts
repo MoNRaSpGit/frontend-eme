@@ -124,7 +124,7 @@ export async function createOrder(input: NewOrderInput): Promise<Order | null> {
   return made;
 }
 
-function patchOrder(id: string, body: { action: "accept" | "reject" | "courier" | "delivered"; courierId?: number }) {
+function patchOrder(id: string, body: { action: "accept" | "reject" | "courier" | "delivered" | "kind"; courierId?: number; kind?: "retiro" | "delivery" }) {
   void write("/eme/orders/" + encodeURIComponent(id), "PATCH", body);
 }
 
@@ -181,4 +181,10 @@ export function deleteProduct(id: string) {
 
 export function addCategory(name: string) {
   if (name.trim()) void write("/eme/categories", "POST", { name: name.trim() });
+}
+
+// Pedidos (19/11/2026): pasar un pedido en preparacion a mostrador o delivery.
+export function setOrderKind(id: string, kind: "retiro" | "delivery") {
+  trackActivity("accion", kind === "delivery" ? "Pedido pasado a delivery" : "Pedido pasado a mostrador");
+  patchOrder(id, { action: "kind", kind });
 }
