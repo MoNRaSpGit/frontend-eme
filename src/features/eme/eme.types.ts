@@ -44,4 +44,9 @@ export type EmeState = {
   // no se edito nada, se usa el menu de ejemplo (eme.menu.ts).
   products?: Product[];
   categories?: string[];
+  // Caja (19/11/2026): turno abierto, con caja inicial y gastos.
+  register?: Register | null;
 };
+
+export type RegisterExpense = { id: number; description: string; amount: number; createdAt: string };
+export type Register = { id: number; openedAt: string; openingAmount: number; expenses: RegisterExpense[] };

@@ -40,10 +40,11 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
     <div className="shell">
       <header className="top">
         <div className="brand">
-          <span className="brand-mark">🧾</span>
+          {/* 19/11/2026: logo y nombre de la pizzeria (Nueva Pizzería). */}
+          <img className="brand-logo" src={import.meta.env.BASE_URL + "app-logo.png"} alt="Nueva Pizzería" />
           <div>
-            <h1>Caja</h1>
-            <p>Mostrador</p>
+            <h1>Nueva Pizzería</h1>
+            <p>Caja · Mostrador</p>
           </div>
         </div>
         <div className="row">

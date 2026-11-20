@@ -352,3 +352,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .cart .kind-toggle { margin-top: 8px; }
 .extra-cost { display: grid; grid-template-columns: 1fr 110px; gap: 8px; margin-top: 8px; }
 .extra-cost .row { grid-column: 1 / -1; }
+
+/* Caja (19/11/2026): caja inicial, gastos y cierre en Pedidos. */
+.stat-button { text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.stat-input { width: 100%; font-size: 22px; font-weight: 700; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: inherit; }
+.card.expenses { margin: 10px 0; }
+.close-register { margin-top: 12px; }
+.close-summary { display: grid; gap: 8px; margin: 10px 0; }
+.close-summary .total-line { border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); padding: 8px 0; font-size: 18px; }
+
+/* Logo de Nueva Pizzería en el encabezado (19/11/2026). */
+.brand-logo { width: 46px; height: 46px; border-radius: 50%; background: #fff; object-fit: contain; padding: 3px; flex: none; }

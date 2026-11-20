@@ -1,8 +1,8 @@
 {
   "id": "./?app=eme-2",
-  "name": "Eme - Pedidos para restaurantes",
-  "short_name": "Eme",
-  "description": "Mesas, caja, pedidos y tickets para tu pizzería o restaurante.",
+  "name": "Nueva Pizzería",
+  "short_name": "Nueva Pizzería",
+  "description": "Caja, pedidos y tickets de Nueva Pizzería Tacuarembó.",
   "lang": "es-UY",
   "start_url": "./",
   "scope": "./",

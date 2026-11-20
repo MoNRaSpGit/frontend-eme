@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PrintModal } from "../components/PrintModal";
-import { assignCourier, markDelivered, setOrderKind, useEme } from "../eme.store";
+import { addRegisterExpense, assignCourier, closeRegister, deleteRegisterExpense, markDelivered, setOpeningAmount, setOrderKind, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
 import type { Order, Status } from "../eme.types";
 
@@ -18,18 +18,52 @@ const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "Tarjeta", cuenta: "Cuent
 // Panel de control: arriba lo que entra y la ganancia; abajo los movimientos
 // (pedido 1, 2, 3…) comprimidos. Al tocar uno se abre todo el detalle.
 export function PedidosScreen() {
-  const { orders, couriers } = useEme();
+  const { orders, couriers, register } = useEme();
   const [openId, setOpenId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Order | null>(null);
+  const [editingOpening, setEditingOpening] = useState(false);
+  const [openingDraft, setOpeningDraft] = useState("");
+  const [showExpenses, setShowExpenses] = useState(false);
+  const [expenseDesc, setExpenseDesc] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [showClose, setShowClose] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  // Caja (19/11/2026): Pedidos muestra el turno de caja abierto (desde que se
+  // abrio: a las 3 am o despues del ultimo cierre manual).
+  const opening = register?.openingAmount ?? 0;
+  const expenses = register?.expenses ?? [];
+  const expensesTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const inShift = (iso: string) => (register ? iso >= register.openedAt : isSameDay(iso));
+
+  function startOpening() {
+    setOpeningDraft(opening ? String(opening) : "");
+    setEditingOpening(true);
+  }
+  function saveOpening() {
+    setEditingOpening(false);
+    const value = Number(openingDraft || 0);
+    if (Number.isFinite(value) && value >= 0 && value !== opening) setOpeningAmount(value);
+  }
+  function saveExpense() {
+    const amount = Number(expenseAmount);
+    if (!expenseDesc.trim() || !amount) return;
+    addRegisterExpense(expenseDesc.trim(), amount);
+    setExpenseDesc("");
+    setExpenseAmount("");
+  }
 
   // Lo mas nuevo arriba; los pedidos viejos van quedando abajo.
   const today = orders
-    .filter((order) => isSameDay(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar")
+    .filter((order) => inShift(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.number - a.number);
   const income = today.reduce((sum, order) => sum + order.total, 0);
   // 19/11/2026: ganancia REAL = venta - costo de cada producto vendido (el
   // costo se guarda en el pedido al ingresarlo). Ya no es un porcentaje fijo.
   const profit = today.reduce((sum, order) => sum + (order.total - (order.cost ?? 0)), 0);
+  const cashSales = today.filter((order) => order.payment === "efectivo").reduce((sum, order) => sum + order.total, 0);
+  const cardSales = today.filter((order) => order.payment === "tarjeta").reduce((sum, order) => sum + order.total, 0);
+  const cashExpected = opening + cashSales - expensesTotal;
 
   return (
     <section>
@@ -46,7 +80,103 @@ export function PedidosScreen() {
           <b className="ok">{money(profit)}</b>
           <small>según lo que gana cada producto</small>
         </div>
+        {/* Caja (19/11/2026): caja inicial y gastos del turno. */}
+        <button type="button" className="stat stat-button" onClick={startOpening}>
+          <span>Caja inicial ✎</span>
+          {editingOpening ? (
+            <input
+              className="stat-input"
+              autoFocus
+              inputMode="numeric"
+              value={openingDraft}
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => setOpeningDraft(event.target.value.replace(/[^\d]/g, ""))}
+              onBlur={saveOpening}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") saveOpening();
+                if (event.key === "Escape") setEditingOpening(false);
+              }}
+            />
+          ) : (
+            <b>{money(opening)}</b>
+          )}
+          <small>con la que se abre la caja</small>
+        </button>
+        <button type="button" className="stat stat-button" onClick={() => setShowExpenses((value) => !value)}>
+          <span>Gastos {showExpenses ? "▴" : "▾"}</span>
+          <b className="debt">{money(expensesTotal)}</b>
+          <small>{expenses.length} gastos · tocá para ver</small>
+        </button>
       </div>
+
+      {showExpenses && (
+        <div className="card expenses">
+          {expenses.length === 0 && <p className="hint">Sin gastos en este turno.</p>}
+          {expenses.map((expense) => (
+            <div key={expense.id} className="row between">
+              <span>
+                {expense.description} <small className="hint">{timeOf(expense.createdAt)}</small>
+              </span>
+              <span className="row">
+                <b>{money(expense.amount)}</b>
+                <button type="button" className="btn small" onClick={() => deleteRegisterExpense(expense.id)} aria-label="Borrar gasto">
+                  ✕
+                </button>
+              </span>
+            </div>
+          ))}
+          <div className="extra-cost">
+            <input placeholder="En qué (ej: hielo)" autoComplete="off" value={expenseDesc} onChange={(event) => setExpenseDesc(event.target.value)} />
+            <input placeholder="Monto" inputMode="numeric" autoComplete="off" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value.replace(/[^\d]/g, ""))} />
+            <div className="row">
+              <button type="button" className="btn primary small" onClick={saveExpense} disabled={!expenseDesc.trim() || !Number(expenseAmount)}>
+                + Agregar gasto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <button type="button" className="btn wide close-register" onClick={() => setShowClose(true)}>
+        🔒 Cierre de caja
+      </button>
+      <p className="hint">Si no se cierra a mano, la caja se cierra sola a las 3 de la mañana.</p>
+
+      {showClose && (
+        <div className="modal-backdrop" onClick={() => setShowClose(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h2>Cierre de caja</h2>
+            <div className="close-summary">
+              <div className="row between"><span>Caja inicial</span><b>{money(opening)}</b></div>
+              <div className="row between"><span>Ventas en efectivo</span><b>{money(cashSales)}</b></div>
+              <div className="row between"><span>Ventas con tarjeta</span><b>{money(cardSales)}</b></div>
+              <div className="row between"><span>Gastos</span><b className="debt">− {money(expensesTotal)}</b></div>
+              <div className="row between total-line"><span>Efectivo que tiene que haber</span><b>{money(cashExpected)}</b></div>
+              <div className="row between"><span>Total vendido ({today.length} pedidos)</span><b>{money(income)}</b></div>
+              <div className="row between"><span>Ganancia</span><b className="ok">{money(profit)}</b></div>
+            </div>
+            <p className="hint">Al cerrar, Pedidos arranca de cero (los pedidos quedan guardados en Mes).</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={closing}
+                onClick={async () => {
+                  setClosing(true);
+                  const ok = await closeRegister();
+                  setClosing(false);
+                  if (ok) setShowClose(false);
+                }}
+              >
+                {closing ? "Cerrando…" : "Cerrar caja"}
+              </button>
+              <button type="button" className="btn" onClick={() => setShowClose(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <h3 className="moves-title">Movimientos</h3>
       <div className="moves">

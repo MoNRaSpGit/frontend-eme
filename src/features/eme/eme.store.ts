@@ -188,3 +188,24 @@ export function setOrderKind(id: string, kind: "retiro" | "delivery") {
   trackActivity("accion", kind === "delivery" ? "Pedido pasado a delivery" : "Pedido pasado a mostrador");
   patchOrder(id, { action: "kind", kind });
 }
+
+// ---------------- Caja (19/11/2026) ----------------
+export function setOpeningAmount(amount: number) {
+  trackActivity("accion", "Caja inicial: $" + Math.round(amount));
+  void write("/eme/register/opening", "PUT", { amount });
+}
+
+export function addRegisterExpense(description: string, amount: number) {
+  trackActivity("accion", "Gasto de caja: " + description + " ($" + Math.round(amount) + ")");
+  void write("/eme/register/expenses", "POST", { description, amount });
+}
+
+export function deleteRegisterExpense(id: number) {
+  trackActivity("accion", "Gasto de caja borrado");
+  void write("/eme/register/expenses/" + id, "DELETE");
+}
+
+export async function closeRegister(): Promise<boolean> {
+  trackActivity("accion", "Cierre de caja");
+  return (await write("/eme/register/close", "POST")) !== null;
+}
