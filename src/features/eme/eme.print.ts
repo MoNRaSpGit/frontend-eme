@@ -1,6 +1,7 @@
 import qz from "qz-tray";
 import { API_BASE_URL } from "../../shared/config/api";
 import type { AccountClient, Order, OrderLine } from "./eme.types";
+import { renderClienteTicketPng } from "./eme.ticketImage";
 
 // ======================================================================
 // Impresion (18/11/2026): ticket del cliente + comanda de cocina.
@@ -236,8 +237,22 @@ export async function printOrder(order: Order, copies: Copies): Promise<PrintRes
   const config = qz.configs.create(printer, { encoding: "CP437" });
   try {
     for (const ticket of tickets) {
-      const data = ticket === "cliente" ? buildClienteEscPos(order) : buildComandaEscPos(order);
-      await qz.print(config, data.map(plainText));
+      if (ticket === "cliente") {
+        // 19/11/2026: ticket con el diseño de la dueña, como imagen. Si la
+        // impresora no acepta la imagen, sale el ticket de texto de siempre.
+        try {
+          const png = await renderClienteTicketPng(order);
+          await qz.print(config, [
+            INIT,
+            { type: "raw", format: "image", flavor: "base64", data: png, options: { language: "ESCPOS", dotDensity: "double" } },
+            CUT
+          ]);
+        } catch {
+          await qz.print(config, buildClienteEscPos(order).map(plainText));
+        }
+      } else {
+        await qz.print(config, buildComandaEscPos(order).map(plainText));
+      }
     }
   } catch (error) {
     throw new Error(`No se pudo imprimir en "${printer}". ${error instanceof Error ? error.message : ""}`.trim());

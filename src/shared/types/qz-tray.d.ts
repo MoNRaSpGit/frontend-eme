@@ -11,7 +11,7 @@ declare module "qz-tray" {
     configs: {
       create: (printer: string, options?: Record<string, unknown>) => unknown;
     };
-    print: (config: unknown, data: string[]) => Promise<void>;
+    print: (config: unknown, data: unknown[]) => Promise<void>;
     security: {
       setCertificatePromise: (
         promiseHandler: (resolve: (certificate: string) => void, reject: (error: unknown) => void) => void
