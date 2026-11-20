@@ -347,3 +347,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .kind-toggle { justify-self: start; padding: 5px 12px; font-size: 13px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-weight: 600; }
 .kind-toggle.on { border-color: var(--accent); color: var(--accent-2); background: rgba(255, 107, 53, 0.12); }
 .couriers .btn.courier { padding: 5px 12px; font-size: 13px; border-radius: 999px; min-height: 0; }
+
+/* Costo adicional en el pedido (19/11/2026). */
+.cart .kind-toggle { margin-top: 8px; }
+.extra-cost { display: grid; grid-template-columns: 1fr 110px; gap: 8px; margin-top: 8px; }
+.extra-cost .row { grid-column: 1 / -1; }

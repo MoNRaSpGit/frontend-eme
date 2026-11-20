@@ -73,6 +73,23 @@ export function ProductPicker({ lines, onChange }: Props) {
     }
   }
 
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [extraDesc, setExtraDesc] = useState("");
+  const [extraAmount, setExtraAmount] = useState("");
+
+  function addExtraCost() {
+    const description = extraDesc.trim();
+    const amount = Math.round(Number(extraAmount));
+    if (!description || !amount) return;
+    let name = "Adicional: " + description;
+    // Si ya hay uno con la misma descripcion, se diferencia para no pisarlo.
+    while (lines.some((line) => line.name === name)) name += " ";
+    onChange([...lines, { productId: "adicional", name, baseName: description, price: amount, qty: 1, extras: [], removed: [] }]);
+    setExtraDesc("");
+    setExtraAmount("");
+    setExtraOpen(false);
+  }
+
   function setQty(name: string, qty: number) {
     onChange(qty > 0 ? lines.map((line) => (line.name === name ? { ...line, qty } : line)) : lines.filter((line) => line.name !== name));
   }
@@ -164,6 +181,32 @@ export function ProductPicker({ lines, onChange }: Props) {
             <b className="cart-sum">{money(line.price * line.qty)}</b>
           </div>
         ))}
+        {/* Costo adicional (19/11/2026): un monto suelto con descripcion (ej:
+            "3 salsas" + $200). Va como un renglon mas del pedido, sin costo. */}
+        {extraOpen ? (
+          <div className="extra-cost">
+            <input placeholder="Descripción (ej: 3 salsas)" autoComplete="off" value={extraDesc} onChange={(event) => setExtraDesc(event.target.value)} />
+            <input
+              placeholder="Monto"
+              inputMode="numeric"
+              autoComplete="off"
+              value={extraAmount}
+              onChange={(event) => setExtraAmount(event.target.value.replace(/[^\d]/g, ""))}
+            />
+            <div className="row">
+              <button type="button" className="btn primary small" onClick={addExtraCost} disabled={!extraDesc.trim() || !Number(extraAmount)}>
+                Agregar
+              </button>
+              <button type="button" className="btn small" onClick={() => setExtraOpen(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="kind-toggle" onClick={() => setExtraOpen(true)}>
+            + Costo adicional
+          </button>
+        )}
         <div className="cart-total">
           <span>Total</span>
           <b>{money(total)}</b>
