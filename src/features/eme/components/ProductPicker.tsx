@@ -4,7 +4,9 @@ import { money } from "../eme.format";
 import { categoriesOf, productsOf, useEme } from "../eme.store";
 import type { OrderLine, Product } from "../eme.types";
 
-type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void };
+// searchOnly (20/11/2026): para Editar pedido, solo el buscador; los productos
+// aparecen recien cuando se escribe algo.
+type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void; searchOnly?: boolean };
 
 // Variantes (19/11/2026): un producto "Base · Variante" (ej: "Pizza Muzzarella · 1M")
 // se agrupa con los demas de la misma base. Sin " · " es un producto suelto.
@@ -35,7 +37,7 @@ function groupProducts(items: Product[]): ProductGroup[] {
 
 // Menu tocable + carrito. Lo usan Mesas (levantar pedido) y Caja (nuevo pedido).
 // Productos y categorias salen de "Productos" (18/11/2026).
-export function ProductPicker({ lines, onChange }: Props) {
+export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
   const eme = useEme();
   const MENU = productsOf(eme);
   const MENU_CATEGORIES = categoriesOf(eme);
@@ -111,7 +113,7 @@ export function ProductPicker({ lines, onChange }: Props) {
   return (
     <div className="picker">
       <input className="picker-search" placeholder="🔎 Buscar producto (ej: pi, hambur, coca…)" autoComplete="off" value={search} onChange={(event) => setSearch(event.target.value)} />
-      {!searchKey && (
+      {!searchKey && !searchOnly && (
       <div className="chips">
         {MENU_CATEGORIES.map((name) => (
           <button key={name} type="button" className={category === name ? "chip on" : "chip"} onClick={() => setCategory(name)}>
@@ -123,7 +125,7 @@ export function ProductPicker({ lines, onChange }: Props) {
 
       <div className="tiles">
         {searchKey && visibleProducts.length === 0 ? <p className="hint">No hay productos con "{search}".</p> : null}
-        {groupProducts(visibleProducts).map((group) => {
+        {(searchOnly && !searchKey ? [] : groupProducts(visibleProducts)).map((group) => {
           const first = group.items[0];
           const qty = lines.filter((line) => group.items.some((item) => item.id === line.productId)).reduce((sum, line) => sum + line.qty, 0);
           const prices = group.items.map((item) => item.price);

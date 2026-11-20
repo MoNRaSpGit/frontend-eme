@@ -34,7 +34,7 @@ export function EditOrderModal({ order, onClose }: { order: Order; onClose: () =
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal edit-order-modal" onClick={(event) => event.stopPropagation()}>
         <h2>Editar pedido #{order.number}</h2>
-        <ProductPicker lines={lines} onChange={setLines} />
+        <ProductPicker lines={lines} onChange={setLines} searchOnly />
         {lines.length === 0 && <p className="error">El pedido quedó vacío. Si no va más, usá "Anular pedido".</p>}
         <div className="modal-actions">
           <button type="button" className="btn primary" disabled={saving || lines.length === 0} onClick={() => void save()}>
