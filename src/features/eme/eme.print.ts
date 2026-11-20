@@ -2,6 +2,38 @@ import qz from "qz-tray";
 import { API_BASE_URL } from "../../shared/config/api";
 import type { AccountClient, Order, OrderLine } from "./eme.types";
 import { renderClienteTicketPng } from "./eme.ticketImage";
+import { getEmeState } from "./eme.store";
+
+// Comanda con "CON ..." (20/11/2026): para un renglon con algun "SIN" devuelve
+// lo que SI lleva (con "A / B" resuelto a la opcion elegida), los agregados
+// pagos aparte y la nota chica de lo que se saco. Sin "SIN" devuelve null.
+function comandaDetail(line: OrderLine): { con: string[]; added: string[]; note: string } | null {
+  const removed = line.removed ?? [];
+  if (removed.length === 0) return null;
+  const product = (getEmeState().products ?? []).find((item) => item.id === line.productId);
+  if (!product?.ingredients?.length) return null;
+  const extras = line.extras ?? [];
+  const con: string[] = [];
+  const swapped: string[] = [];
+  const notes: string[] = [];
+  for (const item of product.ingredients) {
+    const options = item.split("/").map((value) => value.trim()).filter(Boolean);
+    if (options.length > 1) {
+      const picked = options.find((option) => extras.includes(option)) ?? options[0];
+      con.push(picked);
+      if (picked !== options[0]) {
+        swapped.push(picked);
+        notes.push(picked.toLowerCase() + " en vez de " + options[0].toLowerCase());
+      }
+    } else if (removed.includes(item)) {
+      notes.unshift("sin " + item.toLowerCase());
+    } else {
+      con.push(item);
+    }
+  }
+  const added = extras.filter((extra) => !swapped.includes(extra));
+  return { con, added, note: notes.join(" · ") };
+}
 
 // ======================================================================
 // Impresion (18/11/2026): ticket del cliente + comanda de cocina.
@@ -201,8 +233,17 @@ export function buildComandaEscPos(order: Order): string[] {
     count += line.qty;
     const rows = wrap(line.qty + "  " + lineBaseName(line).toUpperCase(), WIDTH / 2);
     out.push(BOLD_ON + SIZE_DOUBLE + rows.join("\n") + "\n" + SIZE_NORMAL + BOLD_OFF);
-    for (const item of line.removed ?? []) out.push("   " + REVERSE_ON + BOLD_ON + SIZE_TALL + " SIN " + REVERSE_OFF + " " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
-    for (const item of line.extras ?? []) out.push("   " + BOLD_ON + SIZE_TALL + "[+] " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+    // 20/11/2026 (pedido de la duena): si algo va SIN, la comanda muestra solo lo
+    // que SI lleva ("CON ..." uno por renglon) y abajo, chico, lo que se saco.
+    const detail = comandaDetail(line);
+    if (detail) {
+      for (const item of detail.con) out.push("   " + BOLD_ON + SIZE_TALL + "CON " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+      for (const item of detail.added) out.push("   " + BOLD_ON + SIZE_TALL + "[+] " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+      for (const row of wrap("(" + detail.note + ")", WIDTH - 3)) out.push("   " + row + "\n");
+    } else {
+      for (const item of line.removed ?? []) out.push("   " + REVERSE_ON + BOLD_ON + SIZE_TALL + " SIN " + REVERSE_OFF + " " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+      for (const item of line.extras ?? []) out.push("   " + BOLD_ON + SIZE_TALL + "[+] " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+    }
     if (index < order.lines.length - 1) out.push(dash());
   });
   if (order.note) {

@@ -226,3 +226,9 @@ export function cancelOrder(id: string) {
   trackActivity("accion", "Pedido anulado");
   patchOrder(id, { action: "cancel" });
 }
+
+// Lectura del estado actual fuera de React (la usa la comanda para listar
+// los ingredientes que SI van, 20/11/2026).
+export function getEmeState(): EmeState {
+  return state;
+}

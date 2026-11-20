@@ -11,6 +11,11 @@ type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void; searc
 // Variantes (19/11/2026): un producto "Base · Variante" (ej: "Pizza Muzzarella · 1M")
 // se agrupa con los demas de la misma base. Sin " · " es un producto suelto.
 type ProductGroup = { base: string; items: Product[] };
+// Ingrediente "A / B": devuelve las opciones (se elige una sola). Si no, null.
+function choiceOptions(item: string): string[] | null {
+  const options = item.split("/").map((value) => value.trim()).filter(Boolean);
+  return options.length > 1 ? options : null;
+}
 // Sin tildes ni mayusculas, para buscar ("jamon" encuentra "Jamón").
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -57,20 +62,26 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
   const [chosen, setChosen] = useState<string[]>([]);
   // Ingredientes destildados ("va SIN ...") del producto abierto (18/11/2026).
   const [removed, setRemoved] = useState<string[]>([]);
+  // Eleccion en ingredientes "A / B" (clave = el ingrediente tal cual).
+  const [picks, setPicks] = useState<Record<string, string>>({});
 
   // Suma una linea; si ya existe igual (mismo producto, extras y "sin") sube la cantidad.
-  function addLine(product: Product, extraIds: string[], removedItems: string[] = []) {
+  function addLine(product: Product, extraIds: string[], removedOnly: string[] = [], swaps: { from: string; to: string }[] = []) {
     const extras = pizzaExtrasFor(product).filter((extra) => extraIds.includes(extra.id));
     const extraCost = extras.reduce((sum, extra) => sum + extra.cost, 0);
     let name = extras.length ? product.name + " + " + extras.map((extra) => extra.label.toLowerCase()).join(", ") : product.name;
-    if (removedItems.length) name += " · sin " + removedItems.join(", ");
+    if (swaps.length) name += " · con " + swaps.map((swap) => swap.to.toLowerCase()).join(", ");
+    if (removedOnly.length) name += " · sin " + removedOnly.join(", ");
+    // En la comanda: "SIN Cheddar" + "[+] Muzzarella".
+    const removedItems = [...removedOnly, ...swaps.map((swap) => swap.from)];
+    const swapExtras = swaps.map((swap) => swap.to);
     const price = product.price + extras.reduce((sum, extra) => sum + extra.price, 0);
     const existing = lines.find((line) => line.name === name);
     if (existing) onChange(lines.map((line) => (line.name === name ? { ...line, qty: line.qty + 1 } : line)));
     else
       onChange([
         ...lines,
-        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: extras.map((extra) => extra.label), removed: removedItems, extraCost }
+        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: [...extras.map((extra) => extra.label), ...swapExtras], removed: removedItems, extraCost }
       ]);
   }
 
@@ -81,6 +92,7 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
       setChosen([]);
       setExtraSearch("");
       setRemoved([]);
+      setPicks({});
       setExtrasFor(product);
     } else {
       addLine(product, []);
@@ -242,6 +254,21 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
                 <p className="hint">Ingredientes: destildá lo que va SIN.</p>
                 <div className="extras">
                   {extrasFor.ingredients!.map((item) => {
+                    // "A / B" (20/11/2026): se elige uno de los dos (ej: Cheddar / Muzzarella).
+                    const options = choiceOptions(item);
+                    if (options) {
+                      const picked = picks[item] ?? options[0];
+                      return options.map((option) => (
+                        <button
+                          key={item + option}
+                          type="button"
+                          className={picked === option ? "extra on" : "extra off"}
+                          onClick={() => setPicks({ ...picks, [item]: option })}
+                        >
+                          <span>{picked === option ? "● " + option : "○ " + option}</span>
+                        </button>
+                      ));
+                    }
                     const on = !removed.includes(item);
                     return (
                       <button
@@ -284,7 +311,12 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
                 type="button"
                 className="btn primary"
                 onClick={() => {
-                  addLine(extrasFor, chosen, removed);
+                  // Opcion elegida distinta de la primera: va "con X" (y SIN la primera).
+                  const swaps = (extrasFor.ingredients ?? [])
+                    .map((item) => ({ options: choiceOptions(item), picked: picks[item] }))
+                    .filter((entry): entry is { options: string[]; picked: string } => !!entry.options && !!entry.picked && entry.picked !== entry.options[0])
+                    .map((entry) => ({ from: entry.options[0], to: entry.picked }));
+                  addLine(extrasFor, chosen, removed, swaps);
                   setExtrasFor(null);
                 }}
               >
