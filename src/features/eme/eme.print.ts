@@ -192,6 +192,8 @@ export function buildComandaEscPos(order: Order): string[] {
   const out: string[] = [INIT, CENTER];
   out.push(REVERSE_ON + BOLD_ON + SIZE_DOUBLE + "  COMANDA  " + "\n" + SIZE_NORMAL + REVERSE_OFF);
   out.push(SIZE_TALL + "Pedido #" + order.number + " · " + KIND_LABEL[order.kind].toUpperCase() + "\n" + SIZE_NORMAL + BOLD_OFF);
+  // 19/11/2026: hora del pedido en la comanda.
+  out.push(BOLD_ON + SIZE_TALL + "Hora: " + timeText(order.createdAt) + "\n" + SIZE_NORMAL + BOLD_OFF);
   out.push(LEFT, dash());
   let count = 0;
   order.lines.forEach((line, index) => {

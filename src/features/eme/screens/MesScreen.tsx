@@ -2,7 +2,6 @@ import { useState } from "react";
 import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
 import { businessDate, money } from "../eme.format";
-import { loadProfitPercent } from "../eme.profit";
 import type { Order } from "../eme.types";
 
 // Igual que el "Mes" de Joker: selector de mes, total y ganancia, semanas
@@ -13,13 +12,15 @@ const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes
 
 // Total por dia, solo con pedidos reales entregados (18/11/2026: se sacaron los
 // meses de ejemplo). La app trae los pedidos desde el 1ro del mes pasado.
-function dayTotals(year: number, month: number, orders: Order[], now: Date): number[] {
+function dayTotals(year: number, month: number, orders: Order[], now: Date, field: "total" | "profit" = "total"): number[] {
   const days = new Date(year, month + 1, 0).getDate();
   const totals = Array(days).fill(0) as number[];
   void now;
   for (const order of orders) {
     const created = businessDate(order.createdAt);
-    if (order.status === "entregado" && created.getFullYear() === year && created.getMonth() === month) totals[created.getDate() - 1] += order.total;
+    if (order.status === "entregado" && created.getFullYear() === year && created.getMonth() === month)
+      // 19/11/2026: ganancia real = venta - costo de los productos (no un %).
+      totals[created.getDate() - 1] += field === "total" ? order.total : order.total - (order.cost ?? 0);
   }
   return totals;
 }
@@ -30,23 +31,23 @@ export function MesScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [openWeeks, setOpenWeeks] = useState<Set<number>>(new Set([1]));
-  const profitPercent = loadProfitPercent();
 
   const totals = dayTotals(year, month, orders, now);
+  const profits = dayTotals(year, month, orders, now, "profit");
   const monthTotal = totals.reduce((sum, value) => sum + value, 0);
-  const profit = (value: number) => value * (profitPercent / 100);
+  const monthProfit = profits.reduce((sum, value) => sum + value, 0);
 
   // Semana 1 = dias 1-7, 2 = 8-14, 3 = 15-21, 4 = 22 en adelante (como en Joker).
   const weeks = [1, 2, 3, 4].map((number) => {
     const days = totals
-      .map((total, index) => ({ day: index + 1, total }))
+      .map((total, index) => ({ day: index + 1, total, profit: profits[index] }))
       .filter((item) => Math.min(4, Math.ceil(item.day / 7)) === number)
       .map((item) => ({
         ...item,
         weekday: WEEKDAYS[new Date(year, month, item.day).getDay()],
         date: String(item.day).padStart(2, "0") + "/" + String(month + 1).padStart(2, "0") + "/" + year
       }));
-    return { number, days, total: days.reduce((sum, item) => sum + item.total, 0) };
+    return { number, days, total: days.reduce((sum, item) => sum + item.total, 0), profit: days.reduce((sum, item) => sum + item.profit, 0) };
   });
 
   const history = Array.from({ length: 6 }, (_, index) => {
@@ -94,8 +95,8 @@ export function MesScreen() {
           <b>{money(monthTotal)}</b>
         </div>
         <div className="stat">
-          <span>Ganancia ({profitPercent}%)</span>
-          <b className="ok">{money(profit(monthTotal))}</b>
+          <span>Ganancia</span>
+          <b className="ok">{money(monthProfit)}</b>
         </div>
       </div>
 
@@ -108,7 +109,7 @@ export function MesScreen() {
               <h3>Semana {week.number}</h3>
               <span className="mes-week-totals">
                 <b>{money(week.total)}</b>
-                <small className="ok">+{money(profit(week.total))}</small>
+                <small className="ok">+{money(week.profit)}</small>
               </span>
             </button>
             {open && (
@@ -127,7 +128,7 @@ export function MesScreen() {
                       <td>{item.weekday}</td>
                       <td>{item.date}</td>
                       <td className="num">{money(item.total)}</td>
-                      <td className="num ok">{item.total > 0 ? money(profit(item.total)) : "-"}</td>
+                      <td className="num ok">{item.total > 0 ? money(item.profit) : "-"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -141,7 +142,7 @@ export function MesScreen() {
         <h3>Ventas por mes</h3>
         <SalesLineChart points={history} ariaLabel="Ventas por mes" />
       </div>
-      <p className="hint">Mes actual con los pedidos reales; meses anteriores son datos de ejemplo.</p>
+      <p className="hint">Ganancia según lo que gana cada producto vendido.</p>
     </section>
   );
 }

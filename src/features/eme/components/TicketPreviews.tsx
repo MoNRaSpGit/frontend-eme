@@ -67,6 +67,7 @@ export function ComandaPreview({ order }: { order: Order }) {
         <div className="comanda-title">COMANDA</div>
         <div className="comanda-meta">
           Pedido #{order.number} · {KIND_LABEL[order.kind].toUpperCase()}
+          <br />Hora: {hora(order.createdAt)}
         </div>
       </div>
       <div className="comanda-body">

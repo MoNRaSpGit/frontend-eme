@@ -2,7 +2,6 @@ import { useState } from "react";
 import { PrintModal } from "../components/PrintModal";
 import { assignCourier, markDelivered, setOrderKind, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
-import { PROFIT_KEY, loadProfitPercent } from "../eme.profit";
 import type { Order, Status } from "../eme.types";
 
 
@@ -22,34 +21,15 @@ export function PedidosScreen() {
   const { orders, couriers } = useEme();
   const [openId, setOpenId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Order | null>(null);
-  const [profitPercent, setProfitPercent] = useState<number>(loadProfitPercent);
-  const [editingProfit, setEditingProfit] = useState(false);
-  const [profitDraft, setProfitDraft] = useState("");
 
   // Lo mas nuevo arriba; los pedidos viejos van quedando abajo.
   const today = orders
     .filter((order) => isSameDay(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.number - a.number);
   const income = today.reduce((sum, order) => sum + order.total, 0);
-  const profit = income * (profitPercent / 100);
-
-  function startEditProfit() {
-    setProfitDraft(String(profitPercent));
-    setEditingProfit(true);
-  }
-
-  function saveProfit() {
-    const value = Number(profitDraft.replace(",", "."));
-    if (value > 0 && value <= 100) {
-      setProfitPercent(value);
-      try {
-        localStorage.setItem(PROFIT_KEY, String(value));
-      } catch {
-        // sin storage: queda en esta pantalla
-      }
-    }
-    setEditingProfit(false);
-  }
+  // 19/11/2026: ganancia REAL = venta - costo de cada producto vendido (el
+  // costo se guarda en el pedido al ingresarlo). Ya no es un porcentaje fijo.
+  const profit = today.reduce((sum, order) => sum + (order.total - (order.cost ?? 0)), 0);
 
   return (
     <section>
@@ -61,29 +41,10 @@ export function PedidosScreen() {
           <b>{money(income)}</b>
           <small>{today.length} pedidos</small>
         </div>
-        <div className="stat editable" onDoubleClick={startEditProfit} title="Doble clic para cambiar el porcentaje">
-          <span>
-            Ganancia (
-            {editingProfit ? (
-              <input
-                className="percent-input"
-                autoFocus
-                inputMode="decimal"
-                value={profitDraft}
-                onChange={(event) => setProfitDraft(event.target.value)}
-                onBlur={saveProfit}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") saveProfit();
-                  if (event.key === "Escape") setEditingProfit(false);
-                }}
-              />
-            ) : (
-              profitPercent
-            )}
-            %)
-          </span>
+        <div className="stat">
+          <span>Ganancia</span>
           <b className="ok">{money(profit)}</b>
-          <small>doble clic para cambiar el %</small>
+          <small>según lo que gana cada producto</small>
         </div>
       </div>
 

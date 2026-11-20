@@ -6,6 +6,29 @@ import type { OrderLine, Product } from "../eme.types";
 
 type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void };
 
+// Variantes (19/11/2026): un producto "Base · Variante" (ej: "Pizza Muzzarella · 1M")
+// se agrupa con los demas de la misma base. Sin " · " es un producto suelto.
+type ProductGroup = { base: string; items: Product[] };
+const VARIANT_SEP = " · ";
+function baseOf(name: string) {
+  const index = name.indexOf(VARIANT_SEP);
+  return index === -1 ? name : name.slice(0, index);
+}
+function variantOf(name: string) {
+  const index = name.indexOf(VARIANT_SEP);
+  return index === -1 ? name : name.slice(index + VARIANT_SEP.length);
+}
+function groupProducts(items: Product[]): ProductGroup[] {
+  const groups: ProductGroup[] = [];
+  for (const item of items) {
+    const base = baseOf(item.name);
+    const found = groups.find((group) => group.base === base);
+    if (found) found.items.push(item);
+    else groups.push({ base, items: [item] });
+  }
+  return groups;
+}
+
 // Menu tocable + carrito. Lo usan Mesas (levantar pedido) y Caja (nuevo pedido).
 // Productos y categorias salen de "Productos" (18/11/2026).
 export function ProductPicker({ lines, onChange }: Props) {
@@ -18,6 +41,7 @@ export function ProductPicker({ lines, onChange }: Props) {
   const category = MENU_CATEGORIES.includes(pickedCategory) ? pickedCategory : (MENU_CATEGORIES[0] ?? "");
 
   const [extrasFor, setExtrasFor] = useState<Product | null>(null);
+  const [variantsFor, setVariantsFor] = useState<ProductGroup | null>(null);
   const [chosen, setChosen] = useState<string[]>([]);
   // Ingredientes destildados ("va SIN ...") del producto abierto (18/11/2026).
   const [removed, setRemoved] = useState<string[]>([]);
@@ -66,19 +90,61 @@ export function ProductPicker({ lines, onChange }: Props) {
       </div>
 
       <div className="tiles">
-        {MENU.filter((item) => item.category === category).map((item) => {
-          const qty = lines.filter((line) => line.productId === item.id).reduce((sum, line) => sum + line.qty, 0);
+        {groupProducts(MENU.filter((item) => item.category === category)).map((group) => {
+          const first = group.items[0];
+          const qty = lines.filter((line) => group.items.some((item) => item.id === line.productId)).reduce((sum, line) => sum + line.qty, 0);
+          const prices = group.items.map((item) => item.price);
+          const single = group.items.length === 1;
           return (
-            <button key={item.id} type="button" className={qty > 0 ? "tile picked" : "tile"} onClick={() => tapProduct(item)}>
-              <span className="tile-emoji">{item.emoji}</span>
-              <strong>{item.name}</strong>
-              {item.ingredients && item.ingredients.length > 0 ? <span className="tile-ingredients">{item.ingredients.join(", ")}</span> : null}
-              <span className="tile-price">{money(item.price)}</span>
+            <button
+              key={group.base}
+              type="button"
+              className={qty > 0 ? "tile picked" : "tile"}
+              onClick={() => (single ? tapProduct(first) : setVariantsFor(group))}
+            >
+              <span className="tile-emoji">{first.emoji}</span>
+              <strong>{group.base}</strong>
+              {single && first.ingredients && first.ingredients.length > 0 ? <span className="tile-ingredients">{first.ingredients.join(", ")}</span> : null}
+              {!single ? <span className="tile-ingredients">{group.items.map((item) => variantOf(item.name)).join(" · ")}</span> : null}
+              <span className="tile-price">{single ? money(first.price) : "desde " + money(Math.min(...prices))}</span>
               {qty > 0 && <span className="tile-badge">{qty}</span>}
             </button>
           );
         })}
       </div>
+
+      {/* 19/11/2026: productos con variantes (x1/x2/x3, 1/2M/1M, lata/litro...)
+          salen como uno solo; al tocarlo se elige la variante. */}
+      {variantsFor && (
+        <div className="modal-backdrop" onClick={() => setVariantsFor(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h2>
+              {variantsFor.items[0].emoji} {variantsFor.base}
+            </h2>
+            <div className="extras">
+              {variantsFor.items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="extra"
+                  onClick={() => {
+                    setVariantsFor(null);
+                    tapProduct(item);
+                  }}
+                >
+                  <span>{variantOf(item.name)}</span>
+                  <b>{money(item.price)}</b>
+                </button>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn" onClick={() => setVariantsFor(null)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="cart">
         <h3>Pedido</h3>

@@ -9,16 +9,19 @@ import { SyncBadge } from "./components/SyncBadge";
 import { PrinterSettings } from "./components/PrinterSettings";
 import { trackActivity } from "../../shared/state/activityLog";
 import { useEme } from "./eme.store";
+import { ACCOUNTS_ENABLED } from "./eme.features";
 
 type Tab = "pedidos" | "nuevo" | "cuenta" | "productos" | "mes";
 
-const TABS: { id: Tab; icon: string; label: string }[] = [
+const ALL_TABS: { id: Tab; icon: string; label: string }[] = [
   { id: "nuevo", icon: "➕", label: "Nuevo pedido" },
   { id: "pedidos", icon: "📋", label: "Pedidos" },
   { id: "cuenta", icon: "📒", label: "Cuenta corriente" },
   { id: "productos", icon: "🍔", label: "Productos" },
   { id: "mes", icon: "📈", label: "Mes" }
 ];
+// Cuenta corriente oculta mientras ACCOUNTS_ENABLED sea false (ver eme.features.ts).
+const TABS = ALL_TABS.filter((item) => item.id !== "cuenta" || ACCOUNTS_ENABLED);
 
 // Rol "Caja / Mostrador": ve todo, como administrador.
 export function CajaPage({ onLogout }: { onLogout?: () => void }) {
@@ -62,7 +65,7 @@ export function CajaPage({ onLogout }: { onLogout?: () => void }) {
         <div className="caja-main">
           {tab === "pedidos" && <PedidosScreen />}
           {tab === "nuevo" && <NuevoPedidoScreen onCreated={() => setTab("pedidos")} />}
-          {tab === "cuenta" && <CuentaCorrienteScreen />}
+          {ACCOUNTS_ENABLED && tab === "cuenta" && <CuentaCorrienteScreen />}
           {tab === "productos" && <ProductosScreen />}
           {tab === "mes" && <MesScreen />}
         </div>

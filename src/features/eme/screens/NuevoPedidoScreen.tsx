@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
 import { PrintModal } from "../components/PrintModal";
 import { createOrder, useEme } from "../eme.store";
+import { ACCOUNTS_ENABLED } from "../eme.features";
 import type { Order, OrderLine, Payment } from "../eme.types";
 
 // La caja ingresa el pedido que llega por WhatsApp o en el mostrador.
@@ -67,7 +68,7 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         </div>
 
         <div className="seg">
-          {(["efectivo", "tarjeta", "cuenta"] as Payment[]).map((value) => (
+          {((ACCOUNTS_ENABLED ? ["efectivo", "tarjeta", "cuenta"] : ["efectivo", "tarjeta"]) as Payment[]).map((value) => (
             <button key={value} type="button" className={payment === value ? "on" : ""} onClick={() => setPayment(value)}>
               {value === "efectivo" ? "Efectivo" : value === "tarjeta" ? "Tarjeta" : "Cta. corriente"}
             </button>
