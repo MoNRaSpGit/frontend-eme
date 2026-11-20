@@ -144,7 +144,7 @@ export function PedidosScreen() {
       <button type="button" className="btn wide close-register" onClick={() => setShowClose(true)}>
         🔒 Cierre de caja
       </button>
-      <p className="hint">Si no se cierra a mano, la caja se cierra sola a las 3 de la mañana.</p>
+      <p className="hint">Si no se cierra a mano, la caja se cierra sola a las 5 de la mañana.</p>
 
       {showClose && (
         <div className="modal-backdrop" onClick={() => setShowClose(false)}>

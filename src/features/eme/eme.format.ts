@@ -13,7 +13,7 @@ export function dateOf(iso: string) {
 
 // Dia comercial (19/11/2026): el local corta a las 3 de la mañana. Un pedido de
 // las 2:30 cuenta para el dia anterior. Se corre la hora 3 horas para atras.
-export const DAY_CUTOFF_HOUR = 3;
+export const DAY_CUTOFF_HOUR = 5; // 20/11/2026: pasado de las 3 a las 5 am
 export function businessDate(value: string | Date = new Date()) {
   const date = typeof value === "string" ? new Date(value) : value;
   return new Date(date.getTime() - DAY_CUTOFF_HOUR * 60 * 60 * 1000);
