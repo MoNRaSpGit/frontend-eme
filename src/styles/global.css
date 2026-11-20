@@ -367,3 +367,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 /* Buscadores del pedido (20/11/2026). */
 .picker-search { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
 .picker-search.small { padding: 8px 10px; font-size: 14px; margin: 6px 0; }
+
+/* Editar / anular pedido (20/11/2026). */
+.edit-order-modal { max-width: 920px; width: min(920px, 96vw); max-height: 92vh; overflow-y: auto; }
+.link-danger { justify-self: start; background: none; border: 0; padding: 4px 0; color: #e0607a; font-size: 13px; text-decoration: underline; cursor: pointer; }

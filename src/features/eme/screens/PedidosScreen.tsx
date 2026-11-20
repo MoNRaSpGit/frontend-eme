@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PrintModal } from "../components/PrintModal";
-import { addRegisterExpense, assignCourier, closeRegister, deleteRegisterExpense, markDelivered, setOpeningAmount, setOrderKind, useEme } from "../eme.store";
+import { EditOrderModal } from "../components/EditOrderModal";
+import { addRegisterExpense, assignCourier, cancelOrder, closeRegister, deleteRegisterExpense, markDelivered, setOpeningAmount, setOrderKind, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
 import type { Order, Status } from "../eme.types";
 
@@ -21,6 +22,8 @@ export function PedidosScreen() {
   const { orders, couriers, register } = useEme();
   const [openId, setOpenId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Order | null>(null);
+  const [editing, setEditing] = useState<Order | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
   const [editingOpening, setEditingOpening] = useState(false);
   const [openingDraft, setOpeningDraft] = useState("");
   const [showExpenses, setShowExpenses] = useState(false);
@@ -259,10 +262,33 @@ export function PedidosScreen() {
 
                   <div className="row between">
                     <b>Total {money(order.total)}</b>
-                    <button type="button" className="btn small" onClick={() => setTicket(order)}>
-                      🖨 Reimprimir
-                    </button>
+                    <span className="row">
+                      <button type="button" className="btn small" onClick={() => setEditing(order)}>
+                        ✎ Editar
+                      </button>
+                      <button type="button" className="btn small" onClick={() => setTicket(order)}>
+                        🖨 Reimprimir
+                      </button>
+                    </span>
                   </div>
+                  {/* Anular (20/11/2026): el pedido deja de sumar en caja y en Mes. */}
+                  {confirmCancel === order.id ? (
+                    <div className="row between">
+                      <span className="hint">¿Anular el pedido #{order.number}?</span>
+                      <span className="row">
+                        <button type="button" className="btn small danger" onClick={() => { cancelOrder(order.id); setConfirmCancel(null); setOpenId(null); }}>
+                          Sí, anular
+                        </button>
+                        <button type="button" className="btn small" onClick={() => setConfirmCancel(null)}>
+                          No
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <button type="button" className="link-danger" onClick={() => setConfirmCancel(order.id)}>
+                      Anular pedido
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -271,6 +297,7 @@ export function PedidosScreen() {
       </div>
 
       {ticket && <PrintModal order={ticket} autoPrint={false} onClose={() => setTicket(null)} />}
+      {editing && <EditOrderModal order={editing} onClose={() => setEditing(null)} />}
     </section>
   );
 }

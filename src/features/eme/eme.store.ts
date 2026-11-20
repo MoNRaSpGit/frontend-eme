@@ -124,7 +124,7 @@ export async function createOrder(input: NewOrderInput): Promise<Order | null> {
   return made;
 }
 
-function patchOrder(id: string, body: { action: "accept" | "reject" | "courier" | "delivered" | "kind"; courierId?: number; kind?: "retiro" | "delivery" }) {
+function patchOrder(id: string, body: { action: "accept" | "reject" | "courier" | "delivered" | "kind" | "cancel"; courierId?: number; kind?: "retiro" | "delivery" }) {
   void write("/eme/orders/" + encodeURIComponent(id), "PATCH", body);
 }
 
@@ -214,4 +214,15 @@ export async function closeRegister(): Promise<boolean> {
 export async function startRegister(amount: number): Promise<boolean> {
   trackActivity("accion", "Caja iniciada desde Nuevo pedido: $" + Math.round(amount));
   return (await write("/eme/register/opening", "PUT", { amount })) !== null;
+}
+
+// Editar / anular un pedido ya ingresado (20/11/2026).
+export async function editOrder(id: string, lines: OrderLine[]): Promise<boolean> {
+  trackActivity("accion", "Pedido editado");
+  return (await write("/eme/orders/" + encodeURIComponent(id), "PUT", { lines })) !== null;
+}
+
+export function cancelOrder(id: string) {
+  trackActivity("accion", "Pedido anulado");
+  patchOrder(id, { action: "cancel" });
 }
