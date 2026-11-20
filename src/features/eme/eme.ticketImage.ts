@@ -11,7 +11,9 @@ export const TICKET_BRAND = {
   thanks: "¡GRACIAS POR ELEGIRNOS!",
   sub: "Tu próxima comida favorita te espera.",
   instagram: "@NuevaPizzeriaTacuarembo",
-  ours: ["USO INTERNO", "Sistema Logic Lab · 092 945 696"]
+  ours: ["USO INTERNO", "Sistema Logic Lab · 092 945 696"],
+  // Nuestro Instagram en el pie (19/11/2026); vacio = no sale.
+  oursInstagram: "@logiclabsoluciones"
 };
 
 const WIDTH = 576;
@@ -294,6 +296,13 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   text(TICKET_BRAND.ours[0], center, 16, 700, "center");
   y += 22;
   text(TICKET_BRAND.ours[1], center, 16, 700, "center");
+  if (TICKET_BRAND.oursInstagram) {
+    y += 26;
+    ctx.font = `700 18px ${FONT}`;
+    const ourW = ctx.measureText(TICKET_BRAND.oursInstagram).width;
+    drawIcon(ctx, "instagram", center - (ourW + 28) / 2, y - 17, 20);
+    text(TICKET_BRAND.oursInstagram, center - (ourW + 28) / 2 + 28, 18, 700);
+  }
   y += 24;
 
   // Recorta al alto usado
