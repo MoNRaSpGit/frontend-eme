@@ -237,13 +237,35 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
       text(row, left + 40, 20, 600);
       if (index === 0) text(price, right - 4, 20, 700, "right");
     });
-  }
-  if (order.note) {
-    ctx.font = `italic 400 18px ${FONT}`;
-    for (const row of wrapText(ctx, "Nota: " + order.note, right - left - 40)) {
-      y += 26;
-      text(row, left + 40, 18, 400, "left", true);
+    // Nota de este producto (20/11/2026), chica e inclinada.
+    if (line.note) {
+      ctx.font = `italic 400 17px ${FONT}`;
+      for (const row of wrapText(ctx, "Nota: " + line.note, right - left - 60)) {
+        y += 23;
+        text(row, left + 40, 17, 400, "left", true);
+      }
     }
+  }
+  // Nota general del pedido (20/11/2026): separada de los productos con una
+  // rayita punteada y su propio titulo, para que no parezca del ultimo producto.
+  if (order.note) {
+    y += 14;
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(left + 6, y);
+    ctx.lineTo(right - 6, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `700 18px ${FONT}`;
+    const label = "Nota del pedido: ";
+    const labelWidth = ctx.measureText(label).width;
+    ctx.font = `400 18px ${FONT}`;
+    wrapText(ctx, order.note, right - left - 12 - labelWidth).forEach((row, index) => {
+      y += 26;
+      if (index === 0) text(label, left + 6, 18, 700);
+      text(row, left + 6 + labelWidth, 18, 400);
+    });
   }
   y += 16;
   rule(3);

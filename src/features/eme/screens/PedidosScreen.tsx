@@ -215,8 +215,9 @@ export function PedidosScreen() {
                   {order.address && <p className="address">📍 {order.address}</p>}
                   <ul className="order-lines">
                     {order.lines.map((line) => (
-                      <li key={line.name}>
+                      <li key={line.name + (line.note ?? "")}>
                         {line.qty} × {line.name} <span className="hint">({money(line.price * line.qty)})</span>
+                        {line.note ? <div className="cart-note">📝 {line.note}</div> : null}
                       </li>
                     ))}
                   </ul>

@@ -9,7 +9,7 @@ export type Product = { id: string; category: string; name: string; price: numbe
 // "name" ya incluye los extras elegidos (ej: "Pizza muzzarella + panceta") y "price" los suma.
 // baseName = nombre del producto solo (para la comanda); removed = ingredientes
 // que se destildaron al tomar el pedido ("SIN lechuga") (18/11/2026).
-export type OrderLine = { productId: string; name: string; price: number; qty: number; extras?: string[]; baseName?: string; removed?: string[]; extraCost?: number };
+export type OrderLine = { productId: string; name: string; price: number; qty: number; extras?: string[]; baseName?: string; removed?: string[]; extraCost?: number; note?: string };
 
 export type Order = {
   id: string;

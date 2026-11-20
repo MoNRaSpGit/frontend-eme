@@ -64,9 +64,10 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
   const [removed, setRemoved] = useState<string[]>([]);
   // Eleccion en ingredientes "A / B" (clave = el ingrediente tal cual).
   const [picks, setPicks] = useState<Record<string, string>>({});
+  const [modalNote, setModalNote] = useState("");
 
   // Suma una linea; si ya existe igual (mismo producto, extras y "sin") sube la cantidad.
-  function addLine(product: Product, extraIds: string[], removedOnly: string[] = [], swaps: { from: string; to: string }[] = []) {
+  function addLine(product: Product, extraIds: string[], removedOnly: string[] = [], swaps: { from: string; to: string }[] = [], itemNote = "") {
     const extras = pizzaExtrasFor(product).filter((extra) => extraIds.includes(extra.id));
     const extraCost = extras.reduce((sum, extra) => sum + extra.cost, 0);
     let name = extras.length ? product.name + " + " + extras.map((extra) => extra.label.toLowerCase()).join(", ") : product.name;
@@ -76,12 +77,14 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
     const removedItems = [...removedOnly, ...swaps.map((swap) => swap.from)];
     const swapExtras = swaps.map((swap) => swap.to);
     const price = product.price + extras.reduce((sum, extra) => sum + extra.price, 0);
-    const existing = lines.find((line) => line.name === name);
-    if (existing) onChange(lines.map((line) => (line.name === name ? { ...line, qty: line.qty + 1 } : line)));
+    // Suma al renglon igual (mismo nombre y misma nota); si no, renglon nuevo.
+    const note = itemNote.trim() || undefined;
+    const sameIndex = lines.findIndex((line) => line.name === name && (line.note ?? "") === (note ?? ""));
+    if (sameIndex >= 0) onChange(lines.map((line, i) => (i === sameIndex ? { ...line, qty: line.qty + 1 } : line)));
     else
       onChange([
         ...lines,
-        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: [...extras.map((extra) => extra.label), ...swapExtras], removed: removedItems, extraCost }
+        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: [...extras.map((extra) => extra.label), ...swapExtras], removed: removedItems, extraCost, note }
       ]);
   }
 
@@ -93,6 +96,7 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
       setExtraSearch("");
       setRemoved([]);
       setPicks({});
+      setModalNote("");
       setExtrasFor(product);
     } else {
       addLine(product, []);
@@ -116,8 +120,21 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
     setExtraOpen(false);
   }
 
-  function setQty(name: string, qty: number) {
-    onChange(qty > 0 ? lines.map((line) => (line.name === name ? { ...line, qty } : line)) : lines.filter((line) => line.name !== name));
+  // Por posicion (20/11/2026): dos renglones con el mismo nombre pueden tener notas distintas.
+  function setQty(index: number, qty: number) {
+    onChange(qty > 0 ? lines.map((line, i) => (i === index ? { ...line, qty } : line)) : lines.filter((_, i) => i !== index));
+  }
+
+  const [noteFor, setNoteFor] = useState<number | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  function startNote(index: number) {
+    setNoteDraft(lines[index]?.note ?? "");
+    setNoteFor(index);
+  }
+  function saveNote(index: number) {
+    const note = noteDraft.trim();
+    onChange(lines.map((line, i) => (i === index ? { ...line, note: note || undefined } : line)));
+    setNoteFor(null);
   }
 
   const total = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
@@ -196,15 +213,41 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
       <div className="cart">
         <h3>Pedido</h3>
         {lines.length === 0 && <p className="hint">Tocá los productos para agregarlos.</p>}
-        {lines.map((line) => (
-          <div key={line.name} className="cart-row">
-            <span>{line.name}</span>
+        {lines.map((line, index) => (
+          <div key={line.name + "|" + (line.note ?? "") + "|" + index} className="cart-row">
+            <span className="cart-name">
+              {line.name}
+              {/* Nota de este producto (20/11/2026): opcional, se toca ✎. */}
+              {noteFor === index ? (
+                <input
+                  className="cart-note-input"
+                  autoFocus
+                  maxLength={160}
+                  placeholder="Nota (ej: bien cocida)"
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  onBlur={() => saveNote(index)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") saveNote(index);
+                    if (event.key === "Escape") setNoteFor(null);
+                  }}
+                />
+              ) : line.note ? (
+                <button type="button" className="cart-note" onClick={() => startNote(index)}>
+                  📝 {line.note}
+                </button>
+              ) : (
+                <button type="button" className="cart-note add" onClick={() => startNote(index)}>
+                  ✎ nota
+                </button>
+              )}
+            </span>
             <div className="stepper">
-              <button type="button" onClick={() => setQty(line.name, line.qty - 1)} aria-label="Menos">
+              <button type="button" onClick={() => setQty(index, line.qty - 1)} aria-label="Menos">
                 −
               </button>
               <b>{line.qty}</b>
-              <button type="button" onClick={() => setQty(line.name, line.qty + 1)} aria-label="Más">
+              <button type="button" onClick={() => setQty(index, line.qty + 1)} aria-label="Más">
                 +
               </button>
             </div>
@@ -306,6 +349,15 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
                 );
               })}
             </div>
+            {/* Nota de este producto (20/11/2026), opcional. */}
+            <input
+              className="picker-search small"
+              maxLength={160}
+              placeholder="📝 Nota para este producto (opcional, ej: bien cocida)"
+              autoComplete="off"
+              value={modalNote}
+              onChange={(event) => setModalNote(event.target.value)}
+            />
             <div className="modal-actions">
               <button
                 type="button"
@@ -316,7 +368,7 @@ export function ProductPicker({ lines, onChange, searchOnly = false }: Props) {
                     .map((item) => ({ options: choiceOptions(item), picked: picks[item] }))
                     .filter((entry): entry is { options: string[]; picked: string } => !!entry.options && !!entry.picked && entry.picked !== entry.options[0])
                     .map((entry) => ({ from: entry.options[0], to: entry.picked }));
-                  addLine(extrasFor, chosen, removed, swaps);
+                  addLine(extrasFor, chosen, removed, swaps, modalNote);
                   setExtrasFor(null);
                 }}
               >

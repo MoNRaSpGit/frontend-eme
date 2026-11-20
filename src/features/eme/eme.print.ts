@@ -212,8 +212,9 @@ export function buildClienteEscPos(order: Order): string[] {
     const price = moneyText(line.price * line.qty);
     const rows = wrap(label, WIDTH - price.length - 1);
     rows.forEach((row, index) => out.push(index === rows.length - 1 ? pad(row, price) : row + "\n"));
+    if (line.note) for (const row of wrap("  Nota: " + line.note, WIDTH)) out.push(row + "\n");
   }
-  if (order.note) out.push("Nota: " + order.note + "\n");
+  if (order.note) out.push(dash() + "Nota del pedido: " + order.note + "\n");
   out.push(dash());
   out.push(BOLD_ON + SIZE_DOUBLE + pad("TOTAL", moneyText(order.total), WIDTH / 2) + SIZE_NORMAL + BOLD_OFF);
   out.push("Pago: " + PAYMENT_LABEL[order.payment] + "\n");
@@ -243,6 +244,13 @@ export function buildComandaEscPos(order: Order): string[] {
     } else {
       for (const item of line.removed ?? []) out.push("   " + REVERSE_ON + BOLD_ON + SIZE_TALL + " SIN " + REVERSE_OFF + " " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
       for (const item of line.extras ?? []) out.push("   " + BOLD_ON + SIZE_TALL + "[+] " + item + "\n" + SIZE_NORMAL + BOLD_OFF);
+    }
+    // Nota de este producto (20/11/2026): bien visible para la cocina.
+    if (line.note) {
+      const rows = wrap(line.note, WIDTH / 2 - 7);
+      rows.forEach((row, i) =>
+        out.push("   " + (i === 0 ? REVERSE_ON + BOLD_ON + SIZE_TALL + " NOTA " + REVERSE_OFF + " " : "         " + BOLD_ON + SIZE_TALL) + row + "\n" + SIZE_NORMAL + BOLD_OFF)
+      );
     }
     if (index < order.lines.length - 1) out.push(dash());
   });
