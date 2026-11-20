@@ -19,7 +19,7 @@ export const TICKET_BRAND = {
 const WIDTH = 576;
 const PAD = 22;
 const FONT = '"Segoe UI", Arial, sans-serif';
-const PAYMENT_TEXT = { efectivo: "Efectivo", tarjeta: "Tarjeta", cuenta: "Cuenta corriente" } as const;
+const PAYMENT_TEXT = { efectivo: "Efectivo", tarjeta: "POS", cuenta: "Cuenta corriente", transferencia: "Transferencia" } as const;
 const KIND_TEXT = { salon: "Mesa", delivery: "Delivery", retiro: "Retira en el local" } as const;
 
 // ---------- iconos (dibujos en negro, viewBox 24x24) ----------

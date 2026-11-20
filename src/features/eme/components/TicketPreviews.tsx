@@ -5,7 +5,7 @@ import type { Order } from "../eme.types";
 // Como se ve en papel cada ticket (18/11/2026). Se usa en el modo simulado para
 // mostrar en pantalla lo que se "imprimio".
 const KIND_LABEL = { salon: "Salón", delivery: "Delivery", retiro: "Retiro" } as const;
-const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "Tarjeta", cuenta: "Cuenta corriente" } as const;
+const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "POS", cuenta: "Cuenta corriente", transferencia: "Transferencia" } as const;
 
 function fecha(iso: string) {
   return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit", year: "numeric" });

@@ -68,9 +68,9 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         </div>
 
         <div className="seg">
-          {((ACCOUNTS_ENABLED ? ["efectivo", "tarjeta", "cuenta"] : ["efectivo", "tarjeta"]) as Payment[]).map((value) => (
+          {((ACCOUNTS_ENABLED ? ["efectivo", "tarjeta", "transferencia", "cuenta"] : ["efectivo", "tarjeta", "transferencia"]) as Payment[]).map((value) => (
             <button key={value} type="button" className={payment === value ? "on" : ""} onClick={() => setPayment(value)}>
-              {value === "efectivo" ? "Efectivo" : value === "tarjeta" ? "Tarjeta" : "Cta. corriente"}
+              {value === "efectivo" ? "Efectivo" : value === "tarjeta" ? "POS" : value === "transferencia" ? "Transferencia" : "Cta. corriente"}
             </button>
           ))}
         </div>

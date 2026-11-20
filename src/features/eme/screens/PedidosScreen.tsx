@@ -13,7 +13,7 @@ const STATUS_LABEL: Record<Status, string> = {
   entregado: "Entregado",
   rechazado: "Rechazado"
 };
-const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "Tarjeta", cuenta: "Cuenta corriente" } as const;
+const PAYMENT_LABEL = { efectivo: "Efectivo", tarjeta: "POS", cuenta: "Cuenta corriente", transferencia: "Transferencia" } as const;
 
 // Panel de control: arriba lo que entra y la ganancia; abajo los movimientos
 // (pedido 1, 2, 3…) comprimidos. Al tocar uno se abre todo el detalle.
@@ -63,6 +63,7 @@ export function PedidosScreen() {
   const profit = today.reduce((sum, order) => sum + (order.total - (order.cost ?? 0)), 0);
   const cashSales = today.filter((order) => order.payment === "efectivo").reduce((sum, order) => sum + order.total, 0);
   const cardSales = today.filter((order) => order.payment === "tarjeta").reduce((sum, order) => sum + order.total, 0);
+  const transferSales = today.filter((order) => order.payment === "transferencia").reduce((sum, order) => sum + order.total, 0);
   const cashExpected = opening + cashSales - expensesTotal;
 
   return (
@@ -149,7 +150,8 @@ export function PedidosScreen() {
             <div className="close-summary">
               <div className="row between"><span>Caja inicial</span><b>{money(opening)}</b></div>
               <div className="row between"><span>Ventas en efectivo</span><b>{money(cashSales)}</b></div>
-              <div className="row between"><span>Ventas con tarjeta</span><b>{money(cardSales)}</b></div>
+              <div className="row between"><span>Ventas con POS</span><b>{money(cardSales)}</b></div>
+              <div className="row between"><span>Ventas por transferencia</span><b>{money(transferSales)}</b></div>
               <div className="row between"><span>Gastos</span><b className="debt">− {money(expensesTotal)}</b></div>
               <div className="row between total-line"><span>Efectivo que tiene que haber</span><b>{money(cashExpected)}</b></div>
               <div className="row between"><span>Total vendido ({today.length} pedidos)</span><b>{money(income)}</b></div>

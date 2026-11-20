@@ -2,7 +2,7 @@ export type Role = "mesas" | "caja";
 export type Channel = "mesa" | "mostrador" | "whatsapp";
 export type Kind = "salon" | "delivery" | "retiro";
 export type Status = "por_aceptar" | "aceptado" | "en_camino" | "entregado" | "rechazado";
-export type Payment = "efectivo" | "tarjeta" | "cuenta";
+export type Payment = "efectivo" | "tarjeta" | "cuenta" | "transferencia"; // "tarjeta" se muestra como POS (20/11/2026)
 
 // ingredients (18/11/2026): opcional; si no tiene, no se muestra nada.
 export type Product = { id: string; category: string; name: string; price: number; cost: number; emoji: string; ingredients?: string[] };
