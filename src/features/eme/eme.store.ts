@@ -209,3 +209,9 @@ export async function closeRegister(): Promise<boolean> {
   trackActivity("accion", "Cierre de caja");
   return (await write("/eme/register/close", "POST")) !== null;
 }
+
+// Acceso rapido (20/11/2026): iniciar la caja desde Nuevo pedido y esperar la respuesta.
+export async function startRegister(amount: number): Promise<boolean> {
+  trackActivity("accion", "Caja iniciada desde Nuevo pedido: $" + Math.round(amount));
+  return (await write("/eme/register/opening", "PUT", { amount })) !== null;
+}

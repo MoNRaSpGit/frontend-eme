@@ -49,4 +49,4 @@ export type EmeState = {
 };
 
 export type RegisterExpense = { id: number; description: string; amount: number; createdAt: string };
-export type Register = { id: number; openedAt: string; openingAmount: number; expenses: RegisterExpense[] };
+export type Register = { id: number; openedAt: string; openingAmount: number; openingSet?: boolean; expenses: RegisterExpense[] };

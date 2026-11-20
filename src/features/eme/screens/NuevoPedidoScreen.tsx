@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ProductPicker } from "../components/ProductPicker";
 import { PrintModal } from "../components/PrintModal";
-import { createOrder, useEme } from "../eme.store";
+import { createOrder, startRegister, useEme } from "../eme.store";
 import { ACCOUNTS_ENABLED } from "../eme.features";
 import type { Order, OrderLine, Payment } from "../eme.types";
 
 // La caja ingresa el pedido que llega por WhatsApp o en el mostrador.
 export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
-  const { clients } = useEme();
+  const { clients, register } = useEme();
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -19,10 +19,30 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
 
   const [saving, setSaving] = useState(false);
 
-  async function submit() {
+  // Caja sin iniciar (20/11/2026): al ingresar el pedido se pide el monto de la
+  // caja inicial; "Seguir sin caja" la deja en $0. Despues sigue el pedido.
+  const [askRegister, setAskRegister] = useState(false);
+  const [registerDraft, setRegisterDraft] = useState("");
+  const [startingRegister, setStartingRegister] = useState(false);
+
+  async function startAndContinue(amount: number) {
+    setStartingRegister(true);
+    const ok = await startRegister(amount);
+    setStartingRegister(false);
+    if (!ok) return;
+    setAskRegister(false);
+    setRegisterDraft("");
+    await submit(true);
+  }
+
+  async function submit(registerChecked = false) {
     if (saving) return;
     if (lines.length === 0) return setError("Agregá al menos un producto.");
     if (payment === "cuenta" && !clientName.trim()) return setError("Para cuenta corriente poné el nombre del cliente.");
+    if (!registerChecked && register && !register.openingSet) {
+      setAskRegister(true);
+      return;
+    }
     setError("");
     setSaving(true);
     const order = await createOrder({
@@ -114,6 +134,35 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       </button>
 
       {/* El pedido ya esta guardado: se elige 1 o 2 tickets y se imprime (19/11/2026). */}
+      {askRegister && (
+        <div className="modal-backdrop" onClick={() => setAskRegister(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h2>Falta iniciar la caja</h2>
+            <p className="hint">¿Con cuánta plata se abre la caja? El pedido se guarda enseguida.</p>
+            <input
+              className="stat-input"
+              autoFocus
+              placeholder="Monto (ej: 2000)"
+              inputMode="numeric"
+              autoComplete="off"
+              value={registerDraft}
+              onChange={(event) => setRegisterDraft(event.target.value.replace(/[^\d]/g, ""))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && Number(registerDraft) > 0) void startAndContinue(Number(registerDraft));
+              }}
+            />
+            <div className="modal-actions">
+              <button type="button" className="btn primary" disabled={startingRegister || !(Number(registerDraft) > 0)} onClick={() => void startAndContinue(Number(registerDraft))}>
+                {startingRegister ? "Guardando…" : "Iniciar caja"}
+              </button>
+              <button type="button" className="btn" disabled={startingRegister} onClick={() => void startAndContinue(0)}>
+                Seguir sin caja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {created && <PrintModal order={created} autoPrint={false} onClose={closeTicket} />}
     </section>
   );
