@@ -25,10 +25,15 @@ export function findMenuItem(id: string) {
   return MENU.find((item) => item.id === id);
 }
 
-// Ingredientes extra que se pueden sumar a una pizza (modo muestra).
-export const PIZZA_EXTRAS = [
-  { id: "panceta", label: "Panceta", price: 80 },
-  { id: "cebolla", label: "Cebolla", price: 40 },
-  { id: "aceitunas", label: "Aceitunas", price: 40 },
-  { id: "muzza", label: "Extra muzzarella", price: 90 }
-] as const;
+// Agregados de pizza (20/11/2026, lista de la dueña). Precio segun tamaño:
+// 1/2 metro $60 (costo $30), 1 metro $100 (costo $60).
+const PIZZA_EXTRA_LABELS = [
+  "Jamón", "Panceta", "Salame", "Choclo", "Aceituna", "Morrón", "Cebolla", "Huevo",
+  "Albahaca", "Tomate", "Fritas", "Cheddar", "Ananá", "Cebolla caramelizada", "Bondiola", "Muzzarella extra"
+];
+export type PizzaExtra = { id: string; label: string; price: number; cost: number };
+export function pizzaExtrasFor(product: { category: string; name: string }): PizzaExtra[] {
+  if (product.category !== "Pizzas") return [];
+  const big = /·\s*1M$/.test(product.name);
+  return PIZZA_EXTRA_LABELS.map((label) => ({ id: label, label, price: big ? 100 : 60, cost: big ? 60 : 30 }));
+}

@@ -363,3 +363,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 /* Logo de Nueva Pizzería en el encabezado (19/11/2026). */
 .brand-logo { width: 46px; height: 46px; border-radius: 50%; background: #fff; object-fit: contain; padding: 3px; flex: none; }
+
+/* Buscadores del pedido (20/11/2026). */
+.picker-search { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.picker-search.small { padding: 8px 10px; font-size: 14px; margin: 6px 0; }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PIZZA_EXTRAS } from "../eme.menu";
+import { pizzaExtrasFor } from "../eme.menu";
 import { money } from "../eme.format";
 import { categoriesOf, productsOf, useEme } from "../eme.store";
 import type { OrderLine, Product } from "../eme.types";
@@ -9,6 +9,10 @@ type Props = { lines: OrderLine[]; onChange: (lines: OrderLine[]) => void };
 // Variantes (19/11/2026): un producto "Base · Variante" (ej: "Pizza Muzzarella · 1M")
 // se agrupa con los demas de la misma base. Sin " · " es un producto suelto.
 type ProductGroup = { base: string; items: Product[] };
+// Sin tildes ni mayusculas, para buscar ("jamon" encuentra "Jamón").
+function normalize(value: string) {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
 const VARIANT_SEP = " · ";
 function baseOf(name: string) {
   const index = name.indexOf(VARIANT_SEP);
@@ -39,6 +43,12 @@ export function ProductPicker({ lines, onChange }: Props) {
   // Los productos llegan del servidor un instante despues de abrir: si todavia no
   // se eligio categoria (o ya no existe), se muestra la primera.
   const category = MENU_CATEGORIES.includes(pickedCategory) ? pickedCategory : (MENU_CATEGORIES[0] ?? "");
+  // Buscadores (20/11/2026): uno de productos (busca en todas las categorias) y
+  // uno chico en la ventana de agregados de pizza.
+  const [search, setSearch] = useState("");
+  const [extraSearch, setExtraSearch] = useState("");
+  const searchKey = normalize(search);
+  const visibleProducts = searchKey ? MENU.filter((item) => normalize(item.name).includes(searchKey)) : MENU.filter((item) => item.category === category);
 
   const [extrasFor, setExtrasFor] = useState<Product | null>(null);
   const [variantsFor, setVariantsFor] = useState<ProductGroup | null>(null);
@@ -48,7 +58,8 @@ export function ProductPicker({ lines, onChange }: Props) {
 
   // Suma una linea; si ya existe igual (mismo producto, extras y "sin") sube la cantidad.
   function addLine(product: Product, extraIds: string[], removedItems: string[] = []) {
-    const extras = PIZZA_EXTRAS.filter((extra) => extraIds.includes(extra.id));
+    const extras = pizzaExtrasFor(product).filter((extra) => extraIds.includes(extra.id));
+    const extraCost = extras.reduce((sum, extra) => sum + extra.cost, 0);
     let name = extras.length ? product.name + " + " + extras.map((extra) => extra.label.toLowerCase()).join(", ") : product.name;
     if (removedItems.length) name += " · sin " + removedItems.join(", ");
     const price = product.price + extras.reduce((sum, extra) => sum + extra.price, 0);
@@ -57,7 +68,7 @@ export function ProductPicker({ lines, onChange }: Props) {
     else
       onChange([
         ...lines,
-        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: extras.map((extra) => extra.label), removed: removedItems }
+        { productId: product.id, name, baseName: product.name, price, qty: 1, extras: extras.map((extra) => extra.label), removed: removedItems, extraCost }
       ]);
   }
 
@@ -66,6 +77,7 @@ export function ProductPicker({ lines, onChange }: Props) {
   function tapProduct(product: Product) {
     if (product.category === "Pizzas" || (product.ingredients?.length ?? 0) > 0) {
       setChosen([]);
+      setExtraSearch("");
       setRemoved([]);
       setExtrasFor(product);
     } else {
@@ -98,6 +110,8 @@ export function ProductPicker({ lines, onChange }: Props) {
 
   return (
     <div className="picker">
+      <input className="picker-search" placeholder="🔎 Buscar producto (ej: pi, hambur, coca…)" autoComplete="off" value={search} onChange={(event) => setSearch(event.target.value)} />
+      {!searchKey && (
       <div className="chips">
         {MENU_CATEGORIES.map((name) => (
           <button key={name} type="button" className={category === name ? "chip on" : "chip"} onClick={() => setCategory(name)}>
@@ -105,9 +119,11 @@ export function ProductPicker({ lines, onChange }: Props) {
           </button>
         ))}
       </div>
+      )}
 
       <div className="tiles">
-        {groupProducts(MENU.filter((item) => item.category === category)).map((group) => {
+        {searchKey && visibleProducts.length === 0 ? <p className="hint">No hay productos con "{search}".</p> : null}
+        {groupProducts(visibleProducts).map((group) => {
           const first = group.items[0];
           const qty = lines.filter((line) => group.items.some((item) => item.id === line.productId)).reduce((sum, line) => sum + line.qty, 0);
           const prices = group.items.map((item) => item.price);
@@ -240,8 +256,13 @@ export function ProductPicker({ lines, onChange }: Props) {
               </>
             )}
             {extrasFor.category === "Pizzas" && <p className="hint">¿Querés agregarle algo?</p>}
+            {pizzaExtrasFor(extrasFor).length > 0 && (
+              <input className="picker-search small" placeholder="🔎 Buscar agregado (ej: ja)" autoComplete="off" value={extraSearch} onChange={(event) => setExtraSearch(event.target.value)} />
+            )}
             <div className="extras">
-              {(extrasFor.category === "Pizzas" ? PIZZA_EXTRAS : []).map((extra) => {
+              {pizzaExtrasFor(extrasFor)
+                .filter((extra) => chosen.includes(extra.id) || normalize(extra.label).includes(normalize(extraSearch)))
+                .map((extra) => {
                 const on = chosen.includes(extra.id);
                 return (
                   <button
@@ -265,7 +286,7 @@ export function ProductPicker({ lines, onChange }: Props) {
                   setExtrasFor(null);
                 }}
               >
-                Agregar · {money(extrasFor.price + PIZZA_EXTRAS.filter((extra) => chosen.includes(extra.id)).reduce((sum, extra) => sum + extra.price, 0))}
+                Agregar · {money(extrasFor.price + pizzaExtrasFor(extrasFor).filter((extra) => chosen.includes(extra.id)).reduce((sum, extra) => sum + extra.price, 0))}
               </button>
               <button type="button" className="btn" onClick={() => setExtrasFor(null)}>
                 Cancelar
