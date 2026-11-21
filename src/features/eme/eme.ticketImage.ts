@@ -207,9 +207,9 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   // veia bien; la letra fina salia "gastada" en la termica). Si no entra, baja
   // a otro renglon.
   if (clientRows.length) {
-    const SIZE = 26;
-    const ROW = 36;
-    const textLeft = left + 50;
+    const SIZE = 30;
+    const ROW = 42;
+    const textLeft = left + 54;
     const layout = clientRows.map((row) => {
       ctx.font = `900 ${SIZE}px ${FONT}`;
       const labelWidth = ctx.measureText(row.label + " ").width;
@@ -230,7 +230,7 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
       row.rows.forEach((value, index) => {
         y += ROW;
         if (index === 0) {
-          drawIcon(ctx, row.icon, left + 14, y - 25, 28);
+          drawIcon(ctx, row.icon, left + 14, y - 28, 32);
           text(row.label, textLeft, SIZE, 900);
           text(value, textLeft + row.labelWidth, SIZE, 700);
         } else {
@@ -306,17 +306,22 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   rule(3);
 
   // Pago y entrega
-  y += 32;
-  drawIcon(ctx, "card", left + 8, y - 19, 22);
-  text("Forma de pago:", left + 40, 19, 800);
-  ctx.font = `800 19px ${FONT}`;
-  text(PAYMENT_TEXT[order.payment], left + 40 + ctx.measureText("Forma de pago: ").width, 19, 400);
-  y += 31;
-  drawIcon(ctx, "moto", left + 6, y - 22, 28);
-  text("Entrega:", left + 40, 19, 800);
-  ctx.font = `800 19px ${FONT}`;
-  text(KIND_TEXT[order.kind], left + 40 + ctx.measureText("Entrega: ").width, 19, 400);
-  y += 16;
+  // 20/11/2026: mas grande y la forma de pago en recuadro negro, bien a la vista.
+  y += 44;
+  drawIcon(ctx, "card", left + 6, y - 26, 30);
+  text("Pago:", left + 46, 28, 900);
+  ctx.font = `900 28px ${FONT}`;
+  const payX = left + 46 + ctx.measureText("Pago: ").width + 12;
+  const payText = PAYMENT_TEXT[order.payment].toUpperCase();
+  const payWidth = ctx.measureText(payText).width;
+  ctx.fillRect(payX - 6, y - 29, payWidth + 12, 38);
+  text(payText, payX, 28, 900, "left", false, "#fff");
+  y += 44;
+  drawIcon(ctx, "moto", left + 4, y - 27, 34);
+  text("Entrega:", left + 46, 26, 900);
+  ctx.font = `900 26px ${FONT}`;
+  text(KIND_TEXT[order.kind], left + 46 + ctx.measureText("Entrega: ").width, 26, 700);
+  y += 18;
   rule();
 
   // Cierre
