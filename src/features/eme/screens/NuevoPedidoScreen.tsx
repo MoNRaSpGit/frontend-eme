@@ -5,6 +5,7 @@ import { createOrder, startRegister, useEme } from "../eme.store";
 import { ACCOUNTS_ENABLED } from "../eme.features";
 import type { Order, OrderLine, Payment } from "../eme.types";
 import { SHIPPING_OPTIONS, SHIPPING_PRODUCT_ID } from "../eme.menu";
+import { getDefaultCopies, setDefaultCopies, type Copies } from "../eme.print";
 
 // La caja ingresa el pedido que llega por WhatsApp o en el mostrador.
 export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
@@ -16,6 +17,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [shipping, setShipping] = useState(0);
+  const [finalizing, setFinalizing] = useState(false);
+  const [copies, setCopies] = useState<Copies>(getDefaultCopies);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Order | null>(null);
 
@@ -46,6 +49,15 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
       return;
     }
     setError("");
+    // 20/11/2026: ultima pregunta antes de guardar: costo de envio (por defecto
+    // sin envio) y cuantos tickets. Recien ahi se guarda e imprime.
+    setShipping(0);
+    setCopies(getDefaultCopies());
+    setFinalizing(true);
+  }
+
+  async function finalize() {
+    if (saving) return;
     setSaving(true);
     const order = await createOrder({
       channel: "mostrador",
@@ -63,6 +75,8 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
     setSaving(false);
     // Si no se pudo guardar, el formulario queda como estaba para reintentar.
     if (!order) return;
+    setFinalizing(false);
+    setDefaultCopies(copies);
     setCreated(order);
     setLines([]);
     setNote("");
@@ -97,17 +111,6 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
               {value === "efectivo" ? "Efectivo" : value === "tarjeta" ? "POS" : value === "transferencia" ? "Transferencia" : "Cta. corriente"}
             </button>
           ))}
-        </div>
-        {/* Costo de envio (20/11/2026): elegir uno pasa el pedido a delivery. */}
-        <div className="shipping-row">
-          <span>🛵 Costo de envío</span>
-          <div className="shipping-options">
-            {SHIPPING_OPTIONS.map((value) => (
-              <button key={value} type="button" className={shipping === value ? "kind-toggle on" : "kind-toggle"} onClick={() => setShipping(value)}>
-                {value === 0 ? "Sin envío" : "$ " + value}
-              </button>
-            ))}
-          </div>
         </div>
         {/* Cuenta corriente (18/11/2026): en el renglon de abajo, una lista a lo
             ancho con los clientes de cuenta corriente, solo para elegir uno. */}
@@ -178,7 +181,43 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
 
-      {created && <PrintModal order={created} autoPrint={false} onClose={closeTicket} />}
+      {/* Ultima pregunta (20/11/2026): envio y tickets; recien ahi se guarda. */}
+      {finalizing && (
+        <div className="modal-backdrop" onClick={() => !saving && setFinalizing(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h2>Terminar pedido</h2>
+            <p className="hint">🛵 Costo de envío</p>
+            <div className="shipping-options">
+              {SHIPPING_OPTIONS.map((value) => (
+                <button key={value} type="button" className={shipping === value ? "kind-toggle on" : "kind-toggle"} onClick={() => setShipping(value)} disabled={saving}>
+                  {value === 0 ? "Sin envío" : "$ " + value}
+                </button>
+              ))}
+            </div>
+            <p className="hint">🖨 ¿Cuántos tickets?</p>
+            <div className="seg">
+              {([1, 2] as Copies[]).map((value) => (
+                <button key={value} type="button" className={copies === value ? "on" : ""} onClick={() => setCopies(value)} disabled={saving}>
+                  {value === 1 ? "1 ticket (cliente)" : "2 tickets (+ comanda)"}
+                </button>
+              ))}
+            </div>
+            <p className="finalize-total">
+              Total <b>$ {Math.round(lines.reduce((sum, line) => sum + line.price * line.qty, 0) + shipping).toLocaleString("es-UY")}</b>
+            </p>
+            <div className="modal-actions">
+              <button type="button" className="btn primary" disabled={saving} onClick={() => void finalize()}>
+                {saving ? "Guardando…" : "Guardar e imprimir"}
+              </button>
+              <button type="button" className="btn" disabled={saving} onClick={() => setFinalizing(false)}>
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {created && <PrintModal order={created} autoPrint onClose={closeTicket} />}
     </section>
   );
 }

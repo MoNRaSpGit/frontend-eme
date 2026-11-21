@@ -420,3 +420,5 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .shipping-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .shipping-row > span { font-size: 14px; color: var(--muted); font-weight: 600; }
 .shipping-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.finalize-total { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 0 4px; font-size: 16px; }
+.finalize-total b { font-size: 24px; }
