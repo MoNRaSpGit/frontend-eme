@@ -227,7 +227,9 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   y += 30;
   text("DETALLE DEL PEDIDO", center, 22, 900, "center");
   y += 6;
-  for (const line of order.lines) {
+  // El costo de envio no va con los productos: tiene su renglon arriba del total.
+  const shippingLine = order.lines.find((line) => line.productId === "envio");
+  for (const line of order.lines.filter((item) => item.productId !== "envio")) {
     ctx.font = `600 20px ${FONT}`;
     const price = money(line.price * line.qty);
     const rows = wrapText(ctx, line.name, right - left - 50 - ctx.measureText(price).width - 16);
@@ -266,6 +268,15 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
       if (index === 0) text(label, left + 6, 18, 700);
       text(row, left + 6 + labelWidth, 18, 400);
     });
+  }
+  // Costo de envio (20/11/2026), con la moto, justo arriba del total.
+  if (shippingLine) {
+    y += 16;
+    rule(1);
+    y += 30;
+    drawIcon(ctx, "moto", left + 6, y - 22, 26);
+    text("Costo de envío", left + 40, 20, 700);
+    text(money(shippingLine.price * shippingLine.qty), right - 4, 20, 700, "right");
   }
   y += 16;
   rule(3);

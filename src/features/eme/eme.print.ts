@@ -208,6 +208,7 @@ export function buildClienteEscPos(order: Order): string[] {
   if (order.address) out.push("Dirección: " + order.address + "\n");
   out.push(dash());
   for (const line of order.lines) {
+    if (line.productId === "envio") continue; // va abajo, arriba del total
     const label = line.qty + " x " + line.name;
     const price = moneyText(line.price * line.qty);
     const rows = wrap(label, WIDTH - price.length - 1);
@@ -215,6 +216,8 @@ export function buildClienteEscPos(order: Order): string[] {
     if (line.note) for (const row of wrap("  Nota: " + line.note, WIDTH)) out.push(row + "\n");
   }
   if (order.note) out.push(dash() + "Nota del pedido: " + order.note + "\n");
+  const shippingLine = order.lines.find((line) => line.productId === "envio");
+  if (shippingLine) out.push(pad("Costo de envio", moneyText(shippingLine.price * shippingLine.qty)));
   out.push(dash());
   out.push(BOLD_ON + SIZE_DOUBLE + pad("TOTAL", moneyText(order.total), WIDTH / 2) + SIZE_NORMAL + BOLD_OFF);
   out.push("Pago: " + PAYMENT_LABEL[order.payment] + "\n");
@@ -230,7 +233,9 @@ export function buildComandaEscPos(order: Order): string[] {
   out.push(BOLD_ON + SIZE_TALL + "Hora: " + timeText(order.createdAt) + "\n" + SIZE_NORMAL + BOLD_OFF);
   out.push(LEFT, dash());
   let count = 0;
-  order.lines.forEach((line, index) => {
+  // El costo de envio no es de cocina: no sale en la comanda (20/11/2026).
+  const kitchenLines = order.lines.filter((line) => line.productId !== "envio");
+  kitchenLines.forEach((line, index) => {
     count += line.qty;
     const rows = wrap(line.qty + "  " + lineBaseName(line).toUpperCase(), WIDTH / 2);
     out.push(BOLD_ON + SIZE_DOUBLE + rows.join("\n") + "\n" + SIZE_NORMAL + BOLD_OFF);
@@ -252,7 +257,7 @@ export function buildComandaEscPos(order: Order): string[] {
         out.push("   " + (i === 0 ? REVERSE_ON + BOLD_ON + SIZE_TALL + " NOTA " + REVERSE_OFF + " " : "         " + BOLD_ON + SIZE_TALL) + row + "\n" + SIZE_NORMAL + BOLD_OFF)
       );
     }
-    if (index < order.lines.length - 1) out.push(dash());
+    if (index < kitchenLines.length - 1) out.push(dash());
   });
   if (order.note) {
     out.push("\n" + "=".repeat(WIDTH) + "\n");

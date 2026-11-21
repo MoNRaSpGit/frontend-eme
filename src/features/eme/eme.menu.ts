@@ -37,3 +37,8 @@ export function pizzaExtrasFor(product: { category: string; name: string }): Piz
   const big = /·\s*1M$/.test(product.name);
   return PIZZA_EXTRA_LABELS.map((label) => ({ id: label, label, price: big ? 100 : 60, cost: big ? 60 : 30 }));
 }
+
+// Costo de envio (20/11/2026): opciones fijas. Va como renglon del pedido con
+// este productId (no es un producto del menu: costo 0, no sale en la comanda).
+export const SHIPPING_OPTIONS = [0, 25, 30, 50] as const;
+export const SHIPPING_PRODUCT_ID = "envio";

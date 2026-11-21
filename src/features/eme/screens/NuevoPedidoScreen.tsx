@@ -4,6 +4,7 @@ import { PrintModal } from "../components/PrintModal";
 import { createOrder, startRegister, useEme } from "../eme.store";
 import { ACCOUNTS_ENABLED } from "../eme.features";
 import type { Order, OrderLine, Payment } from "../eme.types";
+import { SHIPPING_OPTIONS, SHIPPING_PRODUCT_ID } from "../eme.menu";
 
 // La caja ingresa el pedido que llega por WhatsApp o en el mostrador.
 export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
@@ -14,6 +15,7 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
   const [payment, setPayment] = useState<Payment>("efectivo");
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<OrderLine[]>([]);
+  const [shipping, setShipping] = useState(0);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Order | null>(null);
 
@@ -48,8 +50,9 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
     const order = await createOrder({
       channel: "mostrador",
       // Con direccion va por delivery; sin direccion, retira en el local.
-      kind: address.trim() ? "delivery" : "retiro",
-      lines,
+      kind: address.trim() || shipping > 0 ? "delivery" : "retiro",
+      // Costo de envio (20/11/2026): va como un renglon mas (sin costo, todo ganancia).
+      lines: shipping > 0 ? [...lines, { productId: SHIPPING_PRODUCT_ID, name: "Costo de envío", price: shipping, qty: 1, extras: [], removed: [] }] : lines,
       note,
       clientName: clientName.trim(),
       phone,
@@ -67,6 +70,7 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
     setPhone("");
     setAddress("");
     setPayment("efectivo");
+    setShipping(0);
   }
 
   function closeTicket() {
@@ -93,6 +97,17 @@ export function NuevoPedidoScreen({ onCreated }: { onCreated: () => void }) {
               {value === "efectivo" ? "Efectivo" : value === "tarjeta" ? "POS" : value === "transferencia" ? "Transferencia" : "Cta. corriente"}
             </button>
           ))}
+        </div>
+        {/* Costo de envio (20/11/2026): elegir uno pasa el pedido a delivery. */}
+        <div className="shipping-row">
+          <span>🛵 Costo de envío</span>
+          <div className="shipping-options">
+            {SHIPPING_OPTIONS.map((value) => (
+              <button key={value} type="button" className={shipping === value ? "kind-toggle on" : "kind-toggle"} onClick={() => setShipping(value)}>
+                {value === 0 ? "Sin envío" : "$ " + value}
+              </button>
+            ))}
+          </div>
         </div>
         {/* Cuenta corriente (18/11/2026): en el renglon de abajo, una lista a lo
             ancho con los clientes de cuenta corriente, solo para elegir uno. */}
