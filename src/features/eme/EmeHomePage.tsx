@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { trackActivity } from "../../shared/state/activityLog";
+import { getToken, onSessionChange } from "../../shared/state/session";
 import { CajaPage } from "./CajaPage";
+import { LoginScreen } from "./LoginScreen";
+import { logout } from "./eme.store";
 import { MesasScreen } from "./screens/MesasScreen";
 import type { Role } from "./eme.types";
 
@@ -18,6 +21,9 @@ function loadRole(): Role | null {
 // Demo sin contraseña: el login son dos botones.
 export function EmeHomePage() {
   const [role, setRole] = useState<Role | null>(loadRole);
+  const [signedIn, setSignedIn] = useState(() => Boolean(getToken()));
+  // Si la sesion se cierra (Salir o vencida), vuelve al login.
+  useEffect(() => onSessionChange(() => setSignedIn(Boolean(getToken()))), []);
 
   // Una vez por apertura de la app (para saber si la usan).
   useEffect(() => {
@@ -38,8 +44,10 @@ export function EmeHomePage() {
 
   // 18/11/2026: se entra directo al Mostrador (es el unico uso real). La pantalla
   // de "Mesas / Mostrador" queda en el codigo por si se vuelve a usar.
+  // 20/11/2026: con login. Sin sesion se ve el login; al salir vuelve ahi.
+  if (!signedIn) return <LoginScreen onReady={() => setSignedIn(true)} />;
   if (role === "mesas") return <MesasScreen onLogout={() => choose(null)} />;
-  return <CajaPage />;
+  return <CajaPage onLogout={() => void logout()} />;
 
   return (
     <main className="login">

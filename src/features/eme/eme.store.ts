@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { API_BASE_URL } from "../../shared/config/api";
 import { trackActivity } from "../../shared/state/activityLog";
+import { clearSession, getToken, saveSession, type SessionUser } from "../../shared/state/session";
 import type { Channel, EmeState, Kind, Order, OrderLine, Payment, Product } from "./eme.types";
 
 // EME en produccion (18/11/2026): los datos viven en tablas del backend
@@ -30,7 +31,16 @@ function setStatus(next: SyncStatus) {
 type ServerReply = { ok: boolean; version: number; unchanged?: boolean; state: EmeState | null; orderNumber?: number };
 
 async function api(path: string, init?: RequestInit): Promise<ServerReply> {
-  const response = await fetch(API_BASE_URL + path, { ...init, headers: { "Content-Type": "application/json" } });
+  const token = getToken();
+  const response = await fetch(API_BASE_URL + path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) }
+  });
+  // Sesion vencida o cerrada en otro lado: vuelve al login (20/11/2026).
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Tu sesión se cerró. Volvé a ingresar.");
+  }
   if (!response.ok) {
     let message = "No se pudo guardar. Revisá la conexión.";
     try {
@@ -52,6 +62,7 @@ function adopt(reply: ServerReply) {
 }
 
 async function poll() {
+  if (!getToken()) return; // sin sesion no se consulta nada
   try {
     const reply = await api(version >= 0 ? "/eme/state?since=" + version : "/eme/state");
     if (reply.unchanged) setStatus("en-linea");
@@ -231,4 +242,44 @@ export function cancelOrder(id: string) {
 // los ingredientes que SI van, 20/11/2026).
 export function getEmeState(): EmeState {
   return state;
+}
+
+// ---------------- Login (20/11/2026) ----------------
+// Ingresa y, aprovechando la pantalla de carga, trae todo el estado (pedidos,
+// productos, caja) antes de mostrar la app.
+export async function login(username: string, password: string): Promise<SessionUser> {
+  const response = await fetch(API_BASE_URL + "/eme/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: username.trim().toLowerCase(), password })
+  });
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("Usuario o contraseña incorrectos.");
+    throw new Error("No se pudo conectar. Revisá internet y probá de nuevo.");
+  }
+  const data = (await response.json()) as { token: string; user: SessionUser };
+  saveSession(data.token, data.user);
+  trackActivity("login", "Ingresó " + data.user.username);
+  return data.user;
+}
+
+export async function loadInitialState(): Promise<void> {
+  version = -1;
+  await poll();
+}
+
+export async function logout() {
+  const token = getToken();
+  trackActivity("logout", "Salió");
+  if (token) {
+    try {
+      await fetch(API_BASE_URL + "/eme/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token } });
+    } catch {
+      // igual se cierra en este navegador
+    }
+  }
+  clearSession();
+  state = EMPTY;
+  version = -1;
+  emit();
 }
