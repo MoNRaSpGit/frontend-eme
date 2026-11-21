@@ -3,6 +3,7 @@ import { PrintModal } from "../components/PrintModal";
 import { EditOrderModal } from "../components/EditOrderModal";
 import { addRegisterExpense, assignCourier, cancelOrder, closeRegister, deleteRegisterExpense, markDelivered, setOpeningAmount, setOrderKind, useEme } from "../eme.store";
 import { isSameDay, money, timeOf } from "../eme.format";
+import { localTotal } from "../eme.menu";
 import type { Order, Status } from "../eme.types";
 
 
@@ -60,13 +61,13 @@ export function PedidosScreen() {
   const today = orders
     .filter((order) => inShift(order.createdAt) && order.status !== "rechazado" && order.status !== "por_aceptar")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.number - a.number);
-  const income = today.reduce((sum, order) => sum + order.total, 0);
+  const income = today.reduce((sum, order) => sum + localTotal(order), 0);
   // 19/11/2026: ganancia REAL = venta - costo de cada producto vendido (el
   // costo se guarda en el pedido al ingresarlo). Ya no es un porcentaje fijo.
-  const profit = today.reduce((sum, order) => sum + (order.total - (order.cost ?? 0)), 0);
-  const cashSales = today.filter((order) => order.payment === "efectivo").reduce((sum, order) => sum + order.total, 0);
-  const cardSales = today.filter((order) => order.payment === "tarjeta").reduce((sum, order) => sum + order.total, 0);
-  const transferSales = today.filter((order) => order.payment === "transferencia").reduce((sum, order) => sum + order.total, 0);
+  const profit = today.reduce((sum, order) => sum + (localTotal(order) - (order.cost ?? 0)), 0);
+  const cashSales = today.filter((order) => order.payment === "efectivo").reduce((sum, order) => sum + localTotal(order), 0);
+  const cardSales = today.filter((order) => order.payment === "tarjeta").reduce((sum, order) => sum + localTotal(order), 0);
+  const transferSales = today.filter((order) => order.payment === "transferencia").reduce((sum, order) => sum + localTotal(order), 0);
   const cashExpected = opening + cashSales - expensesTotal;
 
   return (

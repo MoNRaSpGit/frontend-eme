@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SalesLineChart } from "../components/SalesLineChart";
 import { useEme } from "../eme.store";
 import { businessDate, money } from "../eme.format";
+import { localTotal } from "../eme.menu";
 import type { Order } from "../eme.types";
 
 // Igual que el "Mes" de Joker: selector de mes, total y ganancia, semanas
@@ -20,7 +21,7 @@ function dayTotals(year: number, month: number, orders: Order[], now: Date, fiel
     const created = businessDate(order.createdAt);
     if (order.status === "entregado" && created.getFullYear() === year && created.getMonth() === month)
       // 19/11/2026: ganancia real = venta - costo de los productos (no un %).
-      totals[created.getDate() - 1] += field === "total" ? order.total : order.total - (order.cost ?? 0);
+      totals[created.getDate() - 1] += field === "total" ? localTotal(order) : localTotal(order) - (order.cost ?? 0);
   }
   return totals;
 }

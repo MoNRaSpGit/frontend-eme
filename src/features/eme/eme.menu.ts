@@ -42,3 +42,10 @@ export function pizzaExtrasFor(product: { category: string; name: string }): Piz
 // este productId (no es un producto del menu: costo 0, no sale en la comanda).
 export const SHIPPING_OPTIONS = [0, 25, 30, 40, 50] as const;
 export const SHIPPING_PRODUCT_ID = "envio";
+
+// Lo que es del local (20/11/2026): el total del pedido SIN el costo de envio,
+// que es plata del repartidor. Se usa en caja, ganancia y Mes.
+export function localTotal(order: { total: number; lines: { productId: string; price: number; qty: number }[] }): number {
+  const shipping = order.lines.filter((line) => line.productId === SHIPPING_PRODUCT_ID).reduce((sum, line) => sum + line.price * line.qty, 0);
+  return order.total - shipping;
+}
