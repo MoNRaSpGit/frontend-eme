@@ -78,6 +78,18 @@ export function PedidosScreen() {
           <span>Plata que va entrando</span>
           <b>{money(income)}</b>
           <small>{today.length} pedidos</small>
+          {/* 20/11/2026: cuanto entro por cada forma de pago. */}
+          <div className="pay-split">
+            <span>
+              💵 Efectivo <b>{money(cashSales)}</b>
+            </span>
+            <span>
+              💳 POS <b>{money(cardSales)}</b>
+            </span>
+            <span>
+              🏦 Transferencia <b>{money(transferSales)}</b>
+            </span>
+          </div>
         </div>
         <div className="stat">
           <span>Ganancia</span>
