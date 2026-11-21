@@ -203,21 +203,40 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   if (order.clientName) clientRows.push({ icon: "user", label: "Cliente:", value: order.clientName });
   if (order.phone) clientRows.push({ icon: "whatsapp", label: "Teléfono:", value: order.phone });
   if (order.address) clientRows.push({ icon: "pin", label: "Dirección:", value: order.address });
+  // 20/11/2026: datos del cliente MAS GRANDES y en negrita (el delivery no los
+  // veia bien; la letra fina salia "gastada" en la termica). Si no entra, baja
+  // a otro renglon.
   if (clientRows.length) {
+    const SIZE = 26;
+    const ROW = 36;
+    const textLeft = left + 50;
+    const layout = clientRows.map((row) => {
+      ctx.font = `900 ${SIZE}px ${FONT}`;
+      const labelWidth = ctx.measureText(row.label + " ").width;
+      ctx.font = `700 ${SIZE}px ${FONT}`;
+      const first = wrapText(ctx, row.value, right - 14 - textLeft - labelWidth);
+      // lo que no entra en el primer renglon sigue abajo, con todo el ancho
+      const rest = first.length > 1 ? wrapText(ctx, first.slice(1).join(" "), right - 14 - textLeft) : [];
+      return { ...row, labelWidth, rows: [first[0] ?? "", ...rest] };
+    });
     const boxTop = y;
-    const boxHeight = 18 + clientRows.length * 30;
-    ctx.lineWidth = 2;
+    const boxHeight = 16 + layout.reduce((sum, row) => sum + row.rows.length * ROW, 0);
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.roundRect(left, boxTop, right - left, boxHeight, 12);
     ctx.stroke();
-    y += 34;
-    for (const row of clientRows) {
-      drawIcon(ctx, row.icon, left + 16, y - 19, 22);
-      text(row.label, left + 46, 20, 800);
-      ctx.font = `800 20px ${FONT}`;
-      const labelWidth = ctx.measureText(row.label + " ").width;
-      text(row.value, left + 46 + labelWidth, 20, 400);
-      y += 30;
+    y += 8;
+    for (const row of layout) {
+      row.rows.forEach((value, index) => {
+        y += ROW;
+        if (index === 0) {
+          drawIcon(ctx, row.icon, left + 14, y - 25, 28);
+          text(row.label, textLeft, SIZE, 900);
+          text(value, textLeft + row.labelWidth, SIZE, 700);
+        } else {
+          text(value, textLeft, SIZE, 700);
+        }
+      });
     }
     y = boxTop + boxHeight + 12;
   }
@@ -345,5 +364,16 @@ export async function renderClienteTicketPng(order: Order): Promise<string> {
   const outCtx = out.getContext("2d");
   if (!outCtx) throw new Error("No se pudo dibujar el ticket.");
   outCtx.drawImage(canvas, 0, 0);
+  // 20/11/2026: blanco y negro puro. Los bordes grises del suavizado la termica
+  // los imprimia como puntitos sueltos ("como sin tinta"); asi sale nitido.
+  const pixels = outCtx.getImageData(0, 0, out.width, out.height);
+  const data = pixels.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const light = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    const value = data[i + 3] < 128 || light > 170 ? 255 : 0;
+    data[i] = data[i + 1] = data[i + 2] = value;
+    data[i + 3] = 255;
+  }
+  outCtx.putImageData(pixels, 0, 0);
   return out.toDataURL("image/png").split(",")[1];
 }
